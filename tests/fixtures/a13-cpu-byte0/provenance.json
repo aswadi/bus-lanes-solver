@@ -1,0 +1,197 @@
+{
+  "source": {
+    "id": "a13",
+    "name": "Allwinner A13 SBC",
+    "repo": "vd-rd/sbc_allwinner_a13",
+    "commit": "8973c32c64349515da64e268cc03ea8c0789ca2a",
+    "path": "hardware/module.kicad_pcb",
+    "sourceSha256": "563b646fbd1f021c43a337798882e54ed024c39823280f8b93ddc59c9aa7cb33",
+    "components": [
+      {
+        "ref": "U200",
+        "value": "DDR3L-x16",
+        "footprint": "winbond:BGA-96_9x14mm_P0.8mm",
+        "pads": 96,
+        "at": [
+          "136",
+          "80"
+        ]
+      },
+      {
+        "ref": "U100",
+        "value": "A13",
+        "footprint": "allwinner:LQFP-176_20x20mm_P0.4mm",
+        "pads": 186,
+        "at": [
+          "161",
+          "81",
+          "-45"
+        ]
+      }
+    ],
+    "nativeLayers": [
+      [
+        "0",
+        "F.Cu",
+        "signal"
+      ],
+      [
+        "4",
+        "In1.Cu",
+        "power"
+      ],
+      [
+        "6",
+        "In2.Cu",
+        "power"
+      ],
+      [
+        "2",
+        "B.Cu",
+        "signal"
+      ]
+    ],
+    "signalLayers": [
+      "top",
+      "bottom"
+    ],
+    "nets": 96,
+    "terminals": 192,
+    "pads": 895,
+    "rules": {
+      "widths": [
+        0.1016,
+        0.127
+      ],
+      "clearances": [
+        0.127,
+        0.2
+      ],
+      "appliedGlobalClearance": 0.2,
+      "viaPad": 0.45,
+      "viaDrill": 0.3
+    },
+    "rectangularPadApproximations": {
+      "roundrect": 553,
+      "oval": 47
+    },
+    "scope": "All named DDR signal nets incident to CPU or RAM, including passive endpoints. Power, VREF, ZQ and unconnected nets excluded. Existing traces, vias and zones removed. Board uses edge bounding box. No timing or impedance constraints invented.",
+    "sample": "sample005",
+    "sampleSha256": "8fb3b3ebaf245cbe020b80faebbb3425af665bd27f0e199086ed97e7e082a0a5",
+    "license": "NOASSERTION",
+    "sourceUrl": "https://github.com/vd-rd/sbc_allwinner_a13/blob/8973c32c64349515da64e268cc03ea8c0789ca2a/hardware/module.kicad_pcb",
+    "extractionRevision": "preserved-ddr-assessment-2026-10-27",
+    "notes": [
+      "These are the captured routing inputs, not newly simplified two-chip layouts.",
+      "KiCad pad primitives are retained as separate obstacles; some package footprints contain multiple primitives per ball.",
+      "Bus metadata restricts source signal layers only; no timing, skew, impedance or differential-pair constraints are invented."
+    ],
+    "projectSource": {
+      "path": "hardware/module.kicad_pro",
+      "sha256": "ccc83772610aa96e6748c2110b123479b6a03c5a56cd256497487b9d2046cc1a"
+    }
+  },
+  "capture": {
+    "tscircuit": "0.0.3107",
+    "core": "0.0.2288",
+    "autorouter": "0.0.1049",
+    "busLanesSolver": "0.0.45",
+    "scope": "CPU-side DDR data byte d00\u2013d07, from A13 pins to series-resistor networks. The RAM, all 378 native pads and all 96 source nets remain declared. Only these eight source nets are requested.",
+    "srjSha256": "f3efebd8018724c87f8a3e19baf5575698c3a83bc77d12de1738222aa0f398a2",
+    "rules": {
+      "widths": [
+        0.1016,
+        0.127
+      ],
+      "clearances": [
+        0.127,
+        0.2
+      ],
+      "appliedGlobalClearance": 0.2,
+      "viaPad": 0.45,
+      "viaDrill": 0.3
+    }
+  },
+  "connections": [
+    {
+      "name": "N022_d00",
+      "nativeNet": "/DDR3 Memory/d00",
+      "path": [
+        ".RN4 > .pin5",
+        ".U100 > .pin22"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N023_d01",
+      "nativeNet": "/DDR3 Memory/d01",
+      "path": [
+        ".RN1 > .pin8",
+        ".U100 > .pin40"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N024_d02",
+      "nativeNet": "/DDR3 Memory/d02",
+      "path": [
+        ".RN4 > .pin6",
+        ".U100 > .pin21"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N025_d03",
+      "nativeNet": "/DDR3 Memory/d03",
+      "path": [
+        ".RN1 > .pin7",
+        ".U100 > .pin41"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N026_d04",
+      "nativeNet": "/DDR3 Memory/d04",
+      "path": [
+        ".RN4 > .pin8",
+        ".U100 > .pin19"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N027_d05",
+      "nativeNet": "/DDR3 Memory/d05",
+      "path": [
+        ".RN1 > .pin5",
+        ".U100 > .pin44"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N028_d06",
+      "nativeNet": "/DDR3 Memory/d06",
+      "path": [
+        ".RN4 > .pin7",
+        ".U100 > .pin20"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    },
+    {
+      "name": "N029_d07",
+      "nativeNet": "/DDR3 Memory/d07",
+      "path": [
+        ".RN1 > .pin6",
+        ".U100 > .pin42"
+      ],
+      "width": 0.1016,
+      "group": "byte0"
+    }
+  ]
+}
