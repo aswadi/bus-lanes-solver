@@ -1,3 +1,9 @@
+import {
+  applyToPoint,
+  compose,
+  rotateDEG,
+  translate,
+} from "transformation-matrix"
 import { CopperIndex } from "./copper-index"
 import { boardSegmentIsClear } from "./board-outline"
 import {
@@ -30,8 +36,33 @@ function sharesOwner(aliases: string[], owners: Set<string>): boolean {
 export function fixedCopper(input: SimpleRouteJson): Copper[] {
   const result: Copper[] = []
   for (const o of input.obstacles) {
-    // A rotated rectangle uses a conservative axis-aligned envelope. Circular
-    // pads retain their exact radius, independent of rotation.
+    const ccwRotationDegrees = o.ccwRotationDegrees ?? 0
+    if (o.shape !== "circle" && ccwRotationDegrees % 90 !== 0) {
+      const padToBoard = compose(
+        translate(o.center.x, o.center.y),
+        rotateDEG(ccwRotationDegrees),
+      )
+      let start = { x: -o.width / 2, y: 0 }
+      let end = { x: o.width / 2, y: 0 }
+      let radius = o.height / 2
+      if (o.height > o.width) {
+        start = { x: 0, y: -o.height / 2 }
+        end = { x: 0, y: o.height / 2 }
+        radius = o.width / 2
+      }
+      // A capsule encloses the full rectangle, including its corners, without
+      // filling the gaps beside rotated pads. Geometry is board-world mm:
+      // +X right, +Y up, right-handed with +Z above.
+      for (const layer of o.layers)
+        result.push({
+          a: applyToPoint(padToBoard, start),
+          b: applyToPoint(padToBoard, end),
+          radius,
+          layer,
+          owners: o.connectedTo,
+        })
+      continue
+    }
     const angle = ((o.ccwRotationDegrees ?? 0) * Math.PI) / 180
     const width =
       Math.abs(Math.cos(angle)) * o.width + Math.abs(Math.sin(angle)) * o.height
