@@ -1062,8 +1062,21 @@ export class BusLanesPipelineSolver extends BaseSolver {
       })
       return
     }
+    const hasTimingConstraints =
+      (this.routingInput.differentialPairs?.length ?? 0) > 0 ||
+      this.routingInput.buses?.some(
+        (bus) =>
+          bus.maxLength !== undefined ||
+          bus.minLength !== undefined ||
+          bus.maxLengthSkew !== undefined,
+      )
+    // Untimed buses try ordinary lane routing first; retain surface-site search
+    // on the first retry when that simpler allocation cannot complete.
+    const tryFreshSurfaceRouting =
+      (hasTimingConstraints && this.attempt === 0) ||
+      (!hasTimingConstraints && this.attempt === 1)
     if (
-      this.attempt === 0 &&
+      tryFreshSurfaceRouting &&
       this.options.smoothTuning &&
       this.options.denseSearch &&
       ((this.routingInput.buses?.length ?? 0) > 1 ||
