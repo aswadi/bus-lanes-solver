@@ -1062,14 +1062,32 @@ export class BusLanesPipelineSolver extends BaseSolver {
       })
       return
     }
+    const buses = this.routingInput.buses ?? []
+    const hasMaxBusLength = buses.some((bus) => bus.maxLength !== undefined)
+    const hasMinBusLength = buses.some((bus) => bus.minLength !== undefined)
+    const hasBusLengthSkew = buses.some(
+      (bus) => bus.maxLengthSkew !== undefined,
+    )
+    const hasDifferentialPairs = Boolean(
+      this.routingInput.differentialPairs?.length,
+    )
+    const hasTimingConstraints =
+      hasMaxBusLength ||
+      hasMinBusLength ||
+      hasBusLengthSkew ||
+      hasDifferentialPairs
+    // Untimed buses try ordinary lane routing first; retain surface-site search
+    // on the first retry when that simpler allocation cannot complete.
+    let surfaceRoutingAttempt = 0
+    if (!hasTimingConstraints) surfaceRoutingAttempt = 1
+    const needsSharedSurfaceRouting = buses.length > 1 || hasMaxBusLength
     if (
-      this.attempt === 0 &&
+      this.attempt === surfaceRoutingAttempt &&
       this.options.smoothTuning &&
       this.options.denseSearch &&
-      ((this.routingInput.buses?.length ?? 0) > 1 ||
-        this.routingInput.buses?.some((bus) => bus.maxLength !== undefined)) &&
+      needsSharedSurfaceRouting &&
       canRouteOnPadLayers(this.routingInput) &&
-      !independentBusGroups(laneInput)
+      !independentGroups
     ) {
       this.sharedPackages = routeFreshSurfaceBuses(
         this.routingInput,
