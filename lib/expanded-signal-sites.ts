@@ -262,6 +262,14 @@ export function* expandedSignalSites({
     )
     if (!Number.isFinite(pitch)) continue
     const surfaceLimit = Math.min(2, 2.5 * pitch)
+    // Sample half-pitch channels even when their clearance is narrower than
+    // one raster cell. A length-limited escape stays inside this local square.
+    const pitchSteps = Math.max(
+      2,
+      2 * Math.ceil(pitch / Math.max(0.01, input.minTraceWidth / 2) / 2),
+    )
+    const surfaceStep = Math.max(0.01, pitch / pitchSteps)
+    const surfaceRadius = Math.ceil(surfaceLimit / surfaceStep) * surfaceStep
     const candidates: Terminal[] = []
     for (let ix = -5; ix <= 5; ix++)
       for (let iy = -5; iy <= 5; iy++) {
@@ -317,101 +325,118 @@ export function* expandedSignalSites({
           fixed,
         ),
     )
-    for (const [index, point] of candidates.entries()) {
-      if (index === gridCandidateCount && ends[end].length) break
-      if (viaScenes.some((scene) => !scene.visible(point, point))) continue
-      if (
-        existingVias.some(
-          (via) =>
-            distance(via, point) <
-            hole / 2 +
-              (via.via_hole_diameter ?? input.minViaHoleDiameter ?? 0.15) / 2 +
-              holeClearance -
-              1e-8,
-        )
-      )
-        continue
-      const local = {
-        ...connection,
-        pointsToConnect: [pad, { ...point, layer: pad.layer }],
-      }
-      const scene = new VectorScene(input, local, width, fixed)
-      const search = new GridVisibilitySearch(
-        scene,
-        pad,
-        point,
-        [],
-        0,
-        undefined,
-        {
-          checkReachability: true,
-          allTerminalAttachments: true,
-          maxLength: surfaceLimit,
-          paretoLength: true,
-        },
-      )
-      try {
-        let steps = 0
-        while (!search.solved && !search.failed && steps++ < 4000) {
-          search.step()
-          yield
-        }
-        if (!search.solved) continue
-        let top = reduceOrdinaryTurns(search.result, scene).map((p) => ({
-          ...p,
-          route_type: "wire" as const,
-          layer: pad.layer,
-          width,
-        }))
-        const topTrace: Trace = {
-          type: "pcb_trace",
-          pcb_trace_id: `expanded_surface_${connection.name}_${end}`,
-          connection_name: connection.name,
-          route: top,
-        }
-        top = chamferOrdinaryCorners(
-          { ...input, connections: [local] },
-          [topTrace],
-          fixed,
-        )[0].route as typeof top
+    // Retain every existing surface escape before resampling an empty domain.
+    for (const alignSurfaceGrid of [false, true]) {
+      if (alignSurfaceGrid && ends[end].length) break
+      const surfaceGrid = alignSurfaceGrid
+        ? {
+            step: surfaceStep,
+            bounds: {
+              minX: pad.x - surfaceRadius,
+              maxX: pad.x + surfaceRadius,
+              minY: pad.y - surfaceRadius,
+              maxY: pad.y + surfaceRadius,
+            },
+          }
+        : {}
+      for (const [index, point] of candidates.entries()) {
+        if (index === gridCandidateCount && ends[end].length) break
+        if (viaScenes.some((scene) => !scene.visible(point, point))) continue
         if (
-          !scene.pathVisible(top) ||
-          length(top) > surfaceLimit + 1e-8 ||
-          !routeAnglesAreConventional([{ ...topTrace, route: top }]) ||
-          !tuningPathIsSelfClear(
-            top,
-            width +
-              (input.minTraceToPadEdgeClearance ??
-                input.defaultObstacleMargin ??
-                0.075),
+          existingVias.some(
+            (via) =>
+              distance(via, point) <
+              hole / 2 +
+                (via.via_hole_diameter ?? input.minViaHoleDiameter ?? 0.15) /
+                  2 +
+                holeClearance -
+                1e-8,
           )
         )
           continue
-        const via: Via = {
-          x: point.x,
-          y: point.y,
-          route_type: "via",
-          from_layer: pad.layer,
-          to_layer: targetLayer,
-          layers: physical,
-          via_diameter: diameter,
-          via_hole_diameter: hole,
+        const local = {
+          ...connection,
+          pointsToConnect: [pad, { ...point, layer: pad.layer }],
         }
-        ends[end].push({
+        const scene = new VectorScene(input, local, width, fixed)
+        const search = new GridVisibilitySearch(
+          scene,
+          pad,
           point,
-          length: length(top),
-          escape: {
-            type: "pcb_trace",
-            pcb_trace_id: `expanded_dogbone_${connection.name}_${end}_${ends[end].length}`,
-            connection_name: connection.name,
-            source_trace_id: connection.source_trace_id ?? connection.name,
-            route: [...top, via, { ...point, route_type: "wire", width }],
+          [],
+          0,
+          undefined,
+          {
+            ...surfaceGrid,
+            checkReachability: true,
+            allTerminalAttachments: true,
+            maxLength: surfaceLimit,
+            paretoLength: true,
           },
-        })
-      } finally {
-        search.cancel()
+        )
+        try {
+          let steps = 0
+          while (!search.solved && !search.failed && steps++ < 4000) {
+            search.step()
+            yield
+          }
+          if (!search.solved) continue
+          let top = reduceOrdinaryTurns(search.result, scene).map((p) => ({
+            ...p,
+            route_type: "wire" as const,
+            layer: pad.layer,
+            width,
+          }))
+          const topTrace: Trace = {
+            type: "pcb_trace",
+            pcb_trace_id: `expanded_surface_${connection.name}_${end}`,
+            connection_name: connection.name,
+            route: top,
+          }
+          top = chamferOrdinaryCorners(
+            { ...input, connections: [local] },
+            [topTrace],
+            fixed,
+          )[0].route as typeof top
+          if (
+            !scene.pathVisible(top) ||
+            length(top) > surfaceLimit + 1e-8 ||
+            !routeAnglesAreConventional([{ ...topTrace, route: top }]) ||
+            !tuningPathIsSelfClear(
+              top,
+              width +
+                (input.minTraceToPadEdgeClearance ??
+                  input.defaultObstacleMargin ??
+                  0.075),
+            )
+          )
+            continue
+          const via: Via = {
+            x: point.x,
+            y: point.y,
+            route_type: "via",
+            from_layer: pad.layer,
+            to_layer: targetLayer,
+            layers: physical,
+            via_diameter: diameter,
+            via_hole_diameter: hole,
+          }
+          ends[end].push({
+            point,
+            length: length(top),
+            escape: {
+              type: "pcb_trace",
+              pcb_trace_id: `expanded_dogbone_${connection.name}_${end}_${ends[end].length}`,
+              connection_name: connection.name,
+              source_trace_id: connection.source_trace_id ?? connection.name,
+              route: [...top, via, { ...point, route_type: "wire", width }],
+            },
+          })
+        } finally {
+          search.cancel()
+        }
+        yield
       }
-      yield
     }
   }
   return ends
