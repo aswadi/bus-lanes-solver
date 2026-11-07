@@ -62,9 +62,18 @@ import {
   type RematchedSignalDogbones,
 } from "./rematch-trapped-signal-dogbones"
 import { BaseSolver } from "@tscircuit/solver-utils"
-import { getCopperLayerNames } from "@tscircuit/fanout-solver"
+import {
+  getCopperLayerNames,
+  getRouteViaSpanLayers,
+} from "@tscircuit/fanout-solver"
 import { BusLanesSolver } from "./bus-lanes-solver"
-import type { SimpleRouteJson, SolverOptions, Trace } from "./types"
+import type {
+  Connection,
+  SimpleRouteJson,
+  SolverOptions,
+  Terminal,
+  Trace,
+} from "./types"
 
 export interface BusLanesPipelineOptions extends SolverOptions {
   fanout?: "auto" | "none"
@@ -553,6 +562,40 @@ export class BusLanesPipelineSolver extends BaseSolver {
       this.phase = "native_pair_approaches"
     }
   }
+  private isNegotiableTerminal(
+    connection: Connection,
+    point: Terminal,
+  ): boolean {
+    if (isUnroutedComponentPad(this.routingInput, connection, point))
+      return true
+    if (!point.layers?.length || !point.layers.includes(point.layer))
+      return false
+    const physical = getCopperLayerNames(this.routingInput.layerCount)
+    return !!this.routingInput.traces?.some(
+      (trace) =>
+        (trace.connection_name === connection.name ||
+          (connection.source_trace_id !== undefined &&
+            trace.source_trace_id === connection.source_trace_id)) &&
+        trace.route.some((via) => {
+          if (
+            via.route_type !== "via" ||
+            Math.hypot(via.x - point.x, via.y - point.y) > 1e-8
+          )
+            return false
+          const span = getRouteViaSpanLayers({
+            fromLayer: via.from_layer,
+            toLayer: via.to_layer,
+            layers: via.layers,
+            layerNames: physical,
+            allowBlindAndBuriedVias:
+              this.routingInput.allowBlindAndBuriedVias ?? false,
+          })
+          return point.layers!.every(
+            (layer) => physical.includes(layer) && span.includes(layer),
+          )
+        }),
+    )
+  }
   getConstructorParams() {
     return [this.input, this.options]
   }
@@ -968,14 +1011,18 @@ export class BusLanesPipelineSolver extends BaseSolver {
       this.options.denseSearch &&
       this.options.smoothTuning &&
       !this.routingInput.differentialPairs?.length &&
-      this.routingInput.connections.every((connection) =>
-        connection.pointsToConnect.every((point) =>
-          isUnroutedComponentPad(this.routingInput, connection, point),
-        ),
+      this.routingInput.connections.every(
+        (connection) =>
+          connection.pointsToConnect.some((point) =>
+            isUnroutedComponentPad(this.routingInput, connection, point),
+          ) &&
+          connection.pointsToConnect.every((point) =>
+            this.isNegotiableTerminal(connection, point),
+          ),
       )
     )
-    // Only newly created, two-ended dogbones may change signal layers during
-    // congestion negotiation. Existing handoffs always keep their fixed layer.
+    // Generated approaches may change sites during congestion negotiation.
+    // Existing handoffs retain their manufactured copper and reachable layers.
     const terminalLayers = new Map<string, string[]>()
     this.hasNativeCarrierAlternatives = false
     for (const connection of this.routingInput.connections) {

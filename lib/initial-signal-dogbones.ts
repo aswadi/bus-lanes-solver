@@ -25,7 +25,9 @@ export function initialSignalDogbones(
     const available = (c: Connection, layer: string) =>
       (!input.allowedLayers || input.allowedLayers.includes(layer)) &&
       c.pointsToConnect.every(
-        (p) => p.layer === layer && isUnroutedComponentPad(input, c, p),
+        (p) =>
+          (p.layers ?? [p.layer]).includes(layer) &&
+          (p.layers !== undefined || isUnroutedComponentPad(input, c, p)),
       ) &&
       (input.buses ?? []).every(
         (b) =>

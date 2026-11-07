@@ -133,14 +133,14 @@ beforeAll(() => {
   ]
 })
 
-// Snapshot failures stay outside test.failing; every visible route is accepted.
+// Snapshot acceptance stays separate from the completion assertion.
 test("shows only validated completed ButterStick DDR copper", async () => {
   await expect(
     getSvgFromGraphicsObject(graphics, { backgroundColor: "white" }),
   ).toMatchSvgSnapshot(import.meta.path)
 })
 
-test.failing("routes both ButterStick DDR bytes to both RAM packages", () => {
+test("routes both ButterStick DDR bytes to both RAM packages", () => {
   expect(secondByte.error).toBeNull()
   expect(secondByte.solved).toBe(true)
 })

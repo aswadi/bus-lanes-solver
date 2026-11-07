@@ -51,7 +51,13 @@ export function routeAlternateSignalDogbones(
     },
     connections: input.connections.map((c) => ({
       ...c,
-      pointsToConnect: c.pointsToConnect.map((p) => rotate(p, turns)),
+      pointsToConnect: c.pointsToConnect.map((p) => {
+        const point = rotate(p, turns)
+        if (!point.layers) return point
+        // The fanout API represents flexible handoffs as layer-set terminals.
+        const { layer: _layer, ...handoff } = point
+        return handoff
+      }),
     })),
     obstacles: input.obstacles.map((o) => ({
       ...o,
