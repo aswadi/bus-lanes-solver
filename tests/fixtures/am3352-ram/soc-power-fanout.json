@@ -2,8 +2,8 @@
   "generator": {
     "name": "@tscircuit/fanout-solver",
     "version": "0.0.76",
-    "dependency": "github:tscircuit/fanout-solver#15857f17beed0f228b2e29544f7ce393af297c86",
-    "sourceSha256": "e7d8139088c055e67c7ef347c463f2d51bad28477f2c74abc3b95ab8c0247c64"
+    "dependency": "github:tscircuit/fanout-solver#e202cef0a97f59bb9a72357e8eeb5e9f1349529e",
+    "sourceSha256": "ca65e5b06e2d9d287d072fc645f30ab40b221c72900438bc3d7fe252336df442"
   },
   "component": "soc",
   "coordinateFrame": "component_local_mm",

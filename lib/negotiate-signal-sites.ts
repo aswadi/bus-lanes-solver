@@ -337,9 +337,13 @@ export function* negotiateSignalSites(
     const carrierLayers = signalLayers(native, connection)
     for (let end = 0; end < 2; end++) {
       const point = connection.pointsToConnect[end]
-      if (carrierLayers.includes(point.layer))
+      for (const layer of carrierLayers) {
+        if (!(point.layers ?? [point.layer]).includes(layer)) continue
+        // The physical handoff has now chosen one carrier, not a layer domain.
+        const { layers: _layers, ...fixedPoint } = point
+        const handoff = { ...fixedPoint, layer }
         ends[end].push({
-          point,
+          point: handoff,
           escape: {
             type: "pcb_trace",
             pcb_trace_id: `local_surface_${connection.name}_${end}`,
@@ -347,14 +351,14 @@ export function* negotiateSignalSites(
             source_trace_id: connection.source_trace_id ?? connection.name,
             route: [
               {
-                ...point,
+                ...handoff,
                 route_type: "wire",
-                layer: point.layer,
                 width: signalWidth(native, connection),
               },
             ],
           },
         })
+      }
     }
     for (let variant = 0; variant < 4; variant++) {
       try {

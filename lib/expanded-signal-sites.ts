@@ -236,16 +236,19 @@ export function* expandedSignalSites({
   ) as Via[]
   for (const end of [0, 1]) {
     const pad = connection.pointsToConnect[end]
-    if (pad.layer === targetLayer) {
+    if ((pad.layers ?? [pad.layer]).includes(targetLayer)) {
+      // Reuse the manufactured handoff without generating another via.
+      const { layers: _layers, ...fixedPad } = pad
+      const point = { ...fixedPad, layer: targetLayer }
       ends[end].push({
-        point: pad,
+        point,
         length: 0,
         escape: {
           type: "pcb_trace",
           pcb_trace_id: `expanded_surface_${connection.name}_${end}`,
           connection_name: connection.name,
           source_trace_id: connection.source_trace_id ?? connection.name,
-          route: [{ ...pad, route_type: "wire", width }],
+          route: [{ ...point, route_type: "wire", width }],
         },
       })
       continue
