@@ -54,4 +54,6 @@ test("reports the real A13 RAM byte with no legal F2 escape", async (): Promise<
   expect(solver.solved).toBe(false)
   expect(solver.traces).toEqual([])
   expect(solver.input).toEqual(input)
+  expect(solver.failureCode).toBe("blocked_pad_escape")
+  expect(solver.iterations).toBe(0)
 })

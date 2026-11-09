@@ -46,6 +46,7 @@ import {
 import { compactUnconstrainedLanes } from "./compact-unconstrained-lanes"
 import { routeFreshSharedBuses } from "./route-fresh-shared-buses"
 import { boardOutlineError } from "./board-outline"
+import { findBlockedPadEscape } from "./find-blocked-pad-escape"
 import { routeSharedLayerBuses } from "./route-shared-layer-buses"
 import { simplifyMatchedTraces } from "./simplify-matched-traces"
 import { routeBackwardPackageBuses } from "./route-backward-package-buses"
@@ -483,6 +484,14 @@ export class BusLanesPipelineSolver extends BaseSolver {
       this.failed = true
       this.error = outlineError
       this.failureCode = "invalid_outline"
+      this.phase = "failed"
+      return
+    }
+    const blockedPad = findBlockedPadEscape(this.routingInput)
+    if (blockedPad) {
+      this.failed = true
+      this.error = `Surface terminal at (${blockedPad.x.toFixed(4)}, ${blockedPad.y.toFixed(4)}) mm has no legal trace or via escape under the declared clearances`
+      this.failureCode = "blocked_pad_escape"
       this.phase = "failed"
       return
     }
