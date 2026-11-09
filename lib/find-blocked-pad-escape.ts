@@ -6,45 +6,6 @@ import type {
   Terminal,
 } from "./types"
 
-type Disk = Point & { radius: number }
-type Box = SimpleRouteJson["bounds"]
-
-/** Prove coverage, never infer it from sampled via positions. Unresolved boxes
- * leave routing enabled. Coordinates and radii are board-world millimetres. */
-function disksCoverBox(disks: Disk[], bounds: Box): boolean {
-  const pending = [{ ...bounds, depth: 0 }]
-  let visited = 0
-  while (pending.length) {
-    if (++visited > 1024) return false
-    const box = pending.pop()!
-    const covered = disks.some((disk) => {
-      const dx = Math.max(
-        Math.abs(box.minX - disk.x),
-        Math.abs(box.maxX - disk.x),
-      )
-      const dy = Math.max(
-        Math.abs(box.minY - disk.y),
-        Math.abs(box.maxY - disk.y),
-      )
-      return Math.hypot(dx, dy) < disk.radius - 1e-7
-    })
-    if (covered) continue
-    if (box.depth === 10) return false
-    const midX = (box.minX + box.maxX) / 2
-    const midY = (box.minY + box.maxY) / 2
-    for (const [minX, maxX] of [
-      [box.minX, midX],
-      [midX, box.maxX],
-    ])
-      for (const [minY, maxY] of [
-        [box.minY, midY],
-        [midY, box.maxY],
-      ])
-        pending.push({ minX, maxX, minY, maxY, depth: box.depth + 1 })
-  }
-  return true
-}
-
 function padEscapeIsBlocked({
   input,
   connection,
@@ -74,6 +35,7 @@ function padEscapeIsBlocked({
   const foreign = input.obstacles.filter(
     (obstacle) =>
       obstacle.shape === "circle" &&
+      Number.isFinite(obstacle.width) &&
       obstacle.width > 0 &&
       obstacle.width === obstacle.height &&
       obstacle.layers.includes(terminal.layer) &&
@@ -134,12 +96,7 @@ function padEscapeIsBlocked({
       .map((bus) => bus.traceWidth ?? Infinity),
   )
   if (!Number.isFinite(width) || width <= 0) return false
-  const disks: Disk[] = [
-    {
-      ...pad.center,
-      radius: (pad.width + input.minViaHoleDiameter!) / 2,
-    },
-  ]
+  let viaExclusionRadiusMm = Infinity
   // A complete ring of foreign circular pads encloses the terminal. Shrinking
   // each disk by its alignment error keeps the proof conservative for floats.
   for (const dx of [-1, 0, 1]) {
@@ -157,14 +114,27 @@ function padEscapeIsBlocked({
         Math.hypot(neighbor.center.x - x, neighbor.center.y - y)
       // Every half-pitch boundary interval lies inside a forbidden trace disk.
       if (radius + width / 2 + clearance <= pitch / 2 + 1e-7) return false
-      disks.push({
-        x,
-        y,
-        radius: radius + input.minViaPadDiameter! / 2 + viaClearance,
-      })
+      viaExclusionRadiusMm = Math.min(
+        viaExclusionRadiusMm,
+        radius + input.minViaPadDiameter! / 2 + viaClearance,
+      )
     }
   }
-  return disksCoverBox(disks, bounds)
+  // Outside the central half-pitch square, a foreign grid pad is at most
+  // pitch / sqrt(2) away. Inside it, the greatest distance to the nearest
+  // foreign pad occurs diagonally at the edge of the forbidden drill disk.
+  // This bound covers every possible via center, without sampling or search.
+  const drillExclusionRadiusMm = (pad.width + input.minViaHoleDiameter!) / 2
+  const centralExclusionRadiusMm = Math.min(
+    drillExclusionRadiusMm,
+    pitch / Math.SQRT2,
+  )
+  const diagonalOffsetMm = centralExclusionRadiusMm / Math.SQRT2
+  const maxForeignPadDistanceMm = Math.hypot(
+    pitch - diagonalOffsetMm,
+    diagonalOffsetMm,
+  )
+  return viaExclusionRadiusMm > maxForeignPadDistanceMm + 1e-7
 }
 
 /** A sufficient impossibility check for an enclosed surface ball. Other pad
@@ -192,6 +162,7 @@ export function findBlockedPadEscape(
         (obstacle) =>
           obstacle.componentId &&
           obstacle.shape === "circle" &&
+          Number.isFinite(obstacle.width) &&
           obstacle.width > 0 &&
           obstacle.width === obstacle.height &&
           obstacle.layers.length === 1 &&
