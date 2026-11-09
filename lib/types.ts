@@ -84,7 +84,6 @@ export interface SimpleRouteJson {
   buses?: Bus[]
   defaultObstacleMargin?: number
   minTraceToPadEdgeClearance?: number
-  minViaEdgeToPadEdgeClearance?: number
   minBoardEdgeClearance?: number
   outline?: Point[]
   differentialPairs?: Array<{
