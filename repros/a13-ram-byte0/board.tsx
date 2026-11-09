@@ -4,7 +4,7 @@ import { NativePart } from "../a13-cpu-byte0/source-part"
 
 const ramByte0 = source.traces.filter((trace) => trace.group === "ram_byte0")
 const ramByte0Names = new Set(ramByte0.map((trace) => trace.name))
-const padClearance = source.rules.appliedGlobalClearance
+const padClearance = 0.127
 
 /** Original board-world placements in mm: +X right, +Y up, +Z above. */
 export default function A13RamByte0(): ReactElement {

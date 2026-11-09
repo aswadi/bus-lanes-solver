@@ -96,9 +96,14 @@
     "core": "0.0.2312",
     "autorouter": "0.0.1066",
     "busLanesSolver": "0.0.49",
-    "scope": "Eight RAM-side data signals ddr-d0 through ddr-d7. All 378 native pad obstacles and native rules retained. No supplied traces. Captured from real TSX through published Core.",
-    "srjSha256": "159546340e2864eecbe20474c8979d9ca249d07b903fe09db37ff873470c81e6",
-    "tsx": "repros/a13-ram-byte0/board.tsx"
+    "scope": "Eight RAM-side data signals ddr-d0 through ddr-d7, with 0.127 mm pad clearance. All 378 native obstacles, placement, layers, widths and via rules retained. No supplied traces. Captured from the committed TSX through published Core.",
+    "srjSha256": "f82956a53a2a906026bdcea41f204e854b7fe3bf5c9c0afc4cbbbe82b97e399a",
+    "tsx": "repros/a13-ram-byte0/board.tsx",
+    "boardRuleOverride": {
+      "minTraceToPadEdgeClearance": 0.127,
+      "minViaEdgeToPadEdgeClearance": 0.127,
+      "originalDdrNetclassClearance": 0.2
+    }
   },
   "connections": [
     {

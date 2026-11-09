@@ -1,21 +1,23 @@
 # A13 RAM-side data byte
 
-The eight requested connections come from the native Allwinner A13 board,
-captured through `tscircuit@0.0.3128` and Core's local bus routing pipeline.
-All 378 component pads, placements, signal layers, widths and clearances are
-retained. The capture comes from
-[`board.tsx`](../../../repros/a13-ram-byte0/board.tsx). See `provenance.json`
-for the original KiCad revision and hashes.
+This variant routes the eight RAM-side data signals with **0.127 mm (5 mil)
+pad clearance**. The original KiCad project specifies 0.20 mm for these nets;
+that original rule remains recorded in `provenance.json`. This is an explicit
+board-rule change, intended for fabrication that supports the chosen clearance.
 
-Run `bun test tests/a13-ram-byte0.test.ts --update-snapshots`.
-The snapshot deliberately shows the failed reproduction, native pads and no
-unaccepted copper. A short deterministic search budget keeps the repro bounded;
-the same published input exceeded 120 seconds with default options.
+The [TSX](../../../repros/a13-ram-byte0/board.tsx) retains all 378 native pads,
+placements, signal layers, trace widths, 0.45/0.30 mm vias and no-via-in-pad rule.
+The input and unrouted Circuit JSON were captured through published
+`tscircuit@0.0.3128` / Core `0.0.2312`.
 
-RAM ball F2 (`ddr-d2`) is surrounded by eight foreign 0.4 mm pads on a 0.8 mm
-pitch. With 0.1016 mm traces and 0.2 mm clearance, their trace exclusion regions
-close every surface exit. Inside that enclosure, a 0.45 mm via cannot clear the
-foreign pads while its 0.30 mm drill stays outside F2. Via-in-pad and blind vias
-are disabled. Searching longer cannot create a legal escape under these rules.
+```sh
+bunx tscircuit build repros/a13-ram-byte0/board.tsx
+bun test tests/a13-ram-byte0.test.ts --timeout 180000
+```
 
-![Actual RAM-side reproduction](../../__snapshots__/a13-ram-byte0-pcb.snap.svg)
+At 0.20 mm clearance, the neighboring pads enclose F2 without a legal trace or
+via escape. At 0.127 mm, all eight signals complete on TOP without vias. The
+snapshot is generated only after complete connectivity and native copper DRC
+pass. No timing or impedance constraints are invented.
+
+![Completed RAM-side byte](../../__snapshots__/a13-ram-byte0-pcb.snap.svg)

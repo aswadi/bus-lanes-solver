@@ -9,11 +9,14 @@ bunx tscircuit build repros/a13-ram-byte0/board.tsx
 bun test tests/a13-ram-byte0.test.ts --timeout 180000
 ```
 
-The original 0.20 mm pad clearance encloses RAM ball F2 without a legal trace or
-via escape. The baseline SVG deliberately shows zero accepted copper. The
-stacked board-rule change will use 0.127 mm (5 mil) clearance explicitly, while
-preserving the source project's original rules in the shared source capture.
-This is an eight-signal routing reproduction; no DDR timing closure is claimed.
+This variant explicitly uses **0.127 mm (5 mil) pad clearance**, requiring
+compatible fabrication rules. The unchanged source capture records the original
+0.20 mm DDR class. The original clearance prevents F2 from escaping; with the
+chosen clearance, all eight signals route on TOP without vias.
+
+This is a board-rule adjustment for the reproduction. Router defaults, source
+footprints, placement, signal layers, widths and via rules are unchanged. No DDR
+timing closure is claimed.
 
 [Capture provenance](../../tests/fixtures/a13-ram-byte0/provenance.json).
 

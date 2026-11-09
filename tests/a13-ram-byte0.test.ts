@@ -2,10 +2,11 @@ import "./fixtures/pcb-snapshot"
 import { expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { gunzipSync } from "node:zlib"
-import type { AnyCircuitElement } from "circuit-json"
+import { type AnyCircuitElement, pcb_trace } from "circuit-json"
 import { BusLanesPipelineSolver, type SimpleRouteJson } from "../lib"
+import { expectCompletedRouting } from "./fixtures/expect-completed-routing"
 
-test("reports the real A13 RAM byte with no legal F2 escape", async (): Promise<void> => {
+test("routes the real A13 RAM byte with five-mil pad clearance", async (): Promise<void> => {
   const input: SimpleRouteJson = JSON.parse(
     gunzipSync(
       readFileSync(
@@ -23,15 +24,15 @@ test("reports the real A13 RAM byte with no legal F2 escape", async (): Promise<
       ),
     ).toString("utf8"),
   )
-  const solver = new BusLanesPipelineSolver(input, {
-    maxSearchIterations: 1000,
-  })
+  const solver = new BusLanesPipelineSolver(input)
   solver.solve()
+  expectCompletedRouting(solver, input)
+  circuit.push(...solver.traces.map((trace) => pcb_trace.parse(trace)))
   circuit.push({
     type: "pcb_note_text",
     pcb_note_text_id: "routing_status",
     pcb_group_id: "routing_status",
-    text: `UNROUTABLE: 0/8 RAM signals; ${solver.failureCode}`,
+    text: "COMPLETED: 8/8 RAM signals; 0.127 mm pad clearance; DRC passed",
     anchor_position: { x: 2, y: 14 },
     font: "tscircuit2024",
     layer: "top",
@@ -50,8 +51,4 @@ test("reports the real A13 RAM byte with no legal F2 escape", async (): Promise<
       showErrorsInTextOverlay: false,
     },
   })
-  expect(solver.failed).toBe(true)
-  expect(solver.solved).toBe(false)
-  expect(solver.traces).toEqual([])
-  expect(solver.input).toEqual(input)
-})
+}, 180000)
