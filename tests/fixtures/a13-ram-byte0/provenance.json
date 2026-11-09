@@ -97,7 +97,8 @@
     "autorouter": "0.0.1066",
     "busLanesSolver": "0.0.49",
     "scope": "Eight RAM-side data signals ddr-d0 through ddr-d7. All 378 native pad obstacles and native rules retained. No supplied traces. Captured from real TSX through published Core.",
-    "srjSha256": "1cb63341425a1ee7d365e3bb767488c37d46a52ded401614cce40424d5e34b06"
+    "srjSha256": "159546340e2864eecbe20474c8979d9ca249d07b903fe09db37ff873470c81e6",
+    "tsx": "repros/a13-ram-byte0/board.tsx"
   },
   "connections": [
     {

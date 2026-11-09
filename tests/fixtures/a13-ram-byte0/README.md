@@ -3,7 +3,9 @@
 The eight requested connections come from the native Allwinner A13 board,
 captured through `tscircuit@0.0.3128` and Core's local bus routing pipeline.
 All 378 component pads, placements, signal layers, widths and clearances are
-retained. See `provenance.json` for the original KiCad revision and hashes.
+retained. The capture comes from
+[`board.tsx`](../../../repros/a13-ram-byte0/board.tsx). See `provenance.json`
+for the original KiCad revision and hashes.
 
 Run `bun test tests/a13-ram-byte0.test.ts --update-snapshots`.
 The snapshot deliberately shows the failed reproduction, native pads and no
