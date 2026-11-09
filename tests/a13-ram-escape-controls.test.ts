@@ -38,6 +38,10 @@ test("keeps A13 F2 in normal search when a legal escape can exist", (): void => 
   )
   expect(findBlockedPadEscape(smallerVia)).toBeUndefined()
 
+  const smallerViaClearance = structuredClone(input)
+  smallerViaClearance.minViaEdgeToPadEdgeClearance = 0.1
+  expect(findBlockedPadEscape(smallerViaClearance)).toBeUndefined()
+
   const viaInPad = structuredClone(input)
   viaInPad.allowViaInPad = true
   expect(findBlockedPadEscape(viaInPad)).toBeUndefined()

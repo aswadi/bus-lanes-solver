@@ -120,6 +120,11 @@ function padEscapeIsBlocked({
   const clearance =
     input.minTraceToPadEdgeClearance ?? input.defaultObstacleMargin ?? 0.075
   if (!Number.isFinite(clearance) || clearance < 0) return false
+  const viaClearance = Math.min(
+    clearance,
+    input.minViaEdgeToPadEdgeClearance ?? clearance,
+  )
+  if (!Number.isFinite(viaClearance) || viaClearance < 0) return false
   const width = Math.min(
     input.minTraceWidth,
     connection.width ?? Infinity,
@@ -155,7 +160,7 @@ function padEscapeIsBlocked({
       disks.push({
         x,
         y,
-        radius: radius + input.minViaPadDiameter! / 2 + clearance,
+        radius: radius + input.minViaPadDiameter! / 2 + viaClearance,
       })
     }
   }
