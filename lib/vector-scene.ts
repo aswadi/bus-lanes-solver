@@ -102,7 +102,7 @@ export function fixedCopper(input: SimpleRouteJson): Copper[] {
           result.push({
             a: p,
             b: p,
-            radius: (p.via_diameter ?? 0.3) / 2,
+            radius: (p.via_diameter ?? input.minViaPadDiameter ?? 0.3) / 2,
             layer,
             owners,
           })

@@ -10,13 +10,21 @@ const padDiameter = 1
 const clearance = 0.075
 const traceWidth = 0.1
 
-function routePastVia(viaDiameter?: number) {
+function routePastVia({
+  viaDiameter,
+  boardDiameter,
+  signalY = 0.35,
+}: {
+  viaDiameter?: number
+  boardDiameter?: number
+  signalY?: number
+}) {
   const groundStart = { x: 0, y: -1.2, layer: "top" }
   const groundEnd = { x: 1, y: -1, layer: "bottom" }
   const input: SimpleRouteJson = {
     layerCount: 2,
     minTraceWidth: traceWidth,
-    minViaPadDiameter: padDiameter,
+    minViaPadDiameter: boardDiameter,
     minTraceToPadEdgeClearance: clearance,
     bounds: { minX: -4, maxX: 4, minY: -2, maxY: 2 },
     obstacles: [],
@@ -24,8 +32,8 @@ function routePastVia(viaDiameter?: number) {
       {
         name: "SIG",
         pointsToConnect: [
-          { x: -3, y: 0.35, layer: "top" },
-          { x: 3, y: 0.35, layer: "top" },
+          { x: -3, y: signalY, layer: "top" },
+          { x: 3, y: signalY, layer: "top" },
         ],
       },
     ],
@@ -77,14 +85,21 @@ function routePastVia(viaDiameter?: number) {
       .slice(1)
       .map((point, i) => pointSegmentDistance(viaCenter, [route[i], point])),
   )
-  const gap = distanceToCenter - ((viaDiameter ?? padDiameter) + traceWidth) / 2
+  const gap =
+    distanceToCenter - ((viaDiameter ?? boardDiameter ?? 0.3) + traceWidth) / 2
   return { input, solver, gap }
 }
 
-test("an explicit 1 mm fixed via leaves room for the signal", async () => {
-  const { input, solver, gap } = routePastVia(padDiameter)
+test("an omitted fixed-via diameter keeps the same clearance as the explicit control", async () => {
+  const control = routePastVia({
+    viaDiameter: padDiameter,
+    boardDiameter: padDiameter,
+  })
+  expectCompletedRouting(control.solver, control.input)
+  const { input, solver, gap } = routePastVia({ boardDiameter: padDiameter })
   expect(gap).toBeGreaterThanOrEqual(clearance - 1e-8)
   expectCompletedRouting(solver, input)
+  expect(solver.traces).toEqual(control.solver.traces)
   await expect(
     nativePairCircuit({ input, traces: solver.traces }),
   ).toMatchPcbSnapshot({
@@ -93,7 +108,19 @@ test("an explicit 1 mm fixed via leaves room for the signal", async () => {
   })
 })
 
-test("an omitted fixed-via diameter currently lets the signal overlap its land", () => {
-  const { gap } = routePastVia()
-  expect(gap).toBeCloseTo(-0.2, 8)
+test("a larger explicit via pad takes precedence over the board minimum", () => {
+  const { input, solver, gap } = routePastVia({
+    viaDiameter: 1.4,
+    boardDiameter: padDiameter,
+  })
+  expect(gap).toBeGreaterThanOrEqual(clearance - 1e-8)
+  expectCompletedRouting(solver, input)
+})
+
+test("a fixed via keeps its 0.3 mm default when both diameters are omitted", () => {
+  const { solver, gap } = routePastVia({ signalY: 0.2 })
+  expect(gap).toBeGreaterThanOrEqual(clearance - 1e-8)
+  expect(solver.traces).toEqual(
+    routePastVia({ viaDiameter: 0.3, signalY: 0.2 }).solver.traces,
+  )
 })
