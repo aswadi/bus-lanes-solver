@@ -1,8 +1,15 @@
 import "../fixtures/pcb-snapshot"
+import {
+  validateOriginalEndpointConnectivity,
+  validateRoutedCopperDrc,
+} from "@tscircuit/fanout-solver"
 import { expect, test } from "bun:test"
 import { BusLanesPipelineSolver, type SimpleRouteJson } from "../../lib"
 import { pointSegmentDistance } from "../../lib/geometry"
-import { expectCompletedRouting } from "../fixtures/expect-completed-routing"
+import {
+  expectCompletedRouting,
+  nativeRoutingValidationInputs,
+} from "../fixtures/expect-completed-routing"
 import { nativePairCircuit } from "../fixtures/native-pair-circuit"
 
 const viaCenter = { x: 0, y: 0 }
@@ -81,19 +88,46 @@ function routePastVia(viaDiameter?: number) {
   return { input, solver, gap }
 }
 
-test("an explicit 1 mm fixed via leaves room for the signal", async () => {
+test("an explicit 1 mm fixed via leaves room for the signal", () => {
   const { input, solver, gap } = routePastVia(padDiameter)
   expect(gap).toBeGreaterThanOrEqual(clearance - 1e-8)
   expectCompletedRouting(solver, input)
-  await expect(
-    nativePairCircuit({ input, traces: solver.traces }),
-  ).toMatchPcbSnapshot({
-    testPath: import.meta.path,
-    svgOptions: { width: 720, height: 360, showSolderMask: false },
-  })
 })
 
-test("an omitted fixed-via diameter currently lets the signal overlap its land", () => {
-  const { gap } = routePastVia()
+test("an omitted fixed-via diameter currently lets the signal overlap its land", async () => {
+  const { input, solver, gap } = routePastVia()
   expect(gap).toBeCloseTo(-0.2, 8)
+  const native = nativeRoutingValidationInputs(solver)
+  expect(validateOriginalEndpointConnectivity(native).valid).toBe(true)
+  const drc = validateRoutedCopperDrc({ ...native, clearance })
+  expect(drc.valid).toBe(false)
+  expect(drc.issues).toEqual([
+    expect.objectContaining({
+      code: "different-net-trace-via-clearance",
+      connectionName: "GND",
+      otherConnectionName: "SIG",
+      layer: "top",
+    }),
+  ])
+  const circuit = nativePairCircuit({ input, traces: solver.traces })
+  circuit.push({
+    type: "pcb_note_text",
+    pcb_note_text_id: "via_clearance_result",
+    pcb_group_id: "via_clearance_result",
+    text: `DRC FAIL   SIG overlaps GND via by ${Math.abs(gap).toFixed(3)} mm`,
+    anchor_position: { x: 0, y: -1.65 },
+    anchor_alignment: "center",
+    layer: "top",
+    font: "tscircuit2024",
+    font_size: 0.18,
+  })
+  await expect(circuit).toMatchPcbSnapshot({
+    testPath: import.meta.path,
+    svgOptions: {
+      width: 900,
+      height: 450,
+      showSolderMask: false,
+      viewport: { minX: -4.3, maxX: 4.3, minY: -2.15, maxY: 2.15 },
+    },
+  })
 })

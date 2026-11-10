@@ -22,20 +22,7 @@ export function expectCompletedRouting(
   expect(solver.error).toBeNull()
   const input = solver.input
   const output = solver.getOutput()
-  const fixedConnections =
-    solver instanceof BusLanesPipelineSolver
-      ? (solver.options.singleCarrier?.fixedConnections ?? [])
-      : []
-  const native = {
-    inputSrj: nativeValidationSrj({
-      ...input,
-      connections: [...input.connections, ...fixedConnections],
-    }),
-    routedSrj: nativeValidationSrj({
-      ...output,
-      connections: [...output.connections, ...fixedConnections],
-    }),
-  }
+  const native = nativeRoutingValidationInputs(solver)
   const connectivity = validateOriginalEndpointConnectivity(native)
   expect(connectivity.valid).toBe(true)
   expect(connectivity.connectedConnectionCount).toBe(
@@ -72,6 +59,27 @@ export function expectCompletedRouting(
   expect(output.traces?.slice(0, input.traces?.length ?? 0)).toEqual(
     input.traces ?? [],
   )
+}
+
+export function nativeRoutingValidationInputs(
+  solver: BusLanesSolver | BusLanesPipelineSolver,
+) {
+  const input = solver.input
+  const output = solver.getOutput()
+  const fixedConnections =
+    solver instanceof BusLanesPipelineSolver
+      ? (solver.options.singleCarrier?.fixedConnections ?? [])
+      : []
+  return {
+    inputSrj: nativeValidationSrj({
+      ...input,
+      connections: [...input.connections, ...fixedConnections],
+    }),
+    routedSrj: nativeValidationSrj({
+      ...output,
+      connections: [...output.connections, ...fixedConnections],
+    }),
+  }
 }
 
 function nativeValidationSrj(input: SimpleRouteJson) {

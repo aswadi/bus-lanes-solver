@@ -104,7 +104,8 @@ export function nativePairCircuit({
               pcb_via_id: `${trace.pcb_trace_id}_via_${index}`,
               x: point.x,
               y: point.y,
-              outer_diameter: point.via_diameter ?? 0.3,
+              outer_diameter:
+                point.via_diameter ?? input.minViaPadDiameter ?? 0.3,
               hole_diameter: point.via_hole_diameter ?? 0.15,
               layers: [
                 circuitLayer(point.from_layer),
