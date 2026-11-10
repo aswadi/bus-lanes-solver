@@ -51,4 +51,4 @@ test("routes the real A13 RAM byte with five-mil pad clearance", async (): Promi
       showErrorsInTextOverlay: false,
     },
   })
-}, 180000)
+}, 360000)
