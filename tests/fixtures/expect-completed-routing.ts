@@ -6,6 +6,7 @@ import {
 import {
   BusLanesPipelineSolver,
   type BusLanesSolver,
+  type Connection,
   type SimpleRouteJson,
 } from "../../lib"
 import { busLengthReports, pairLengthReports } from "../../lib/route-lengths"
@@ -16,6 +17,9 @@ import { sharedPairSpacingReports } from "../../lib/shared-pair-spacing"
 export function expectCompletedRouting(
   solver: BusLanesSolver | BusLanesPipelineSolver,
   original: SimpleRouteJson,
+  /** Owners of supplied copper that no routing request owns, when the solver
+   * options do not already carry them. */
+  suppliedFixedConnections?: Connection[],
 ) {
   expect(solver.solved).toBe(true)
   expect(solver.failed).toBe(false)
@@ -23,9 +27,10 @@ export function expectCompletedRouting(
   const input = solver.input
   const output = solver.getOutput()
   const fixedConnections =
-    solver instanceof BusLanesPipelineSolver
+    suppliedFixedConnections ??
+    (solver instanceof BusLanesPipelineSolver
       ? (solver.options.singleCarrier?.fixedConnections ?? [])
-      : []
+      : [])
   const native = {
     inputSrj: nativeValidationSrj({
       ...input,
