@@ -17,8 +17,12 @@ Run `bun test tests/h616-full-board-byte0.test.ts`. The test reports fresh solve
 duration and iteration count, independently checks connectivity and copper DRC,
 checks full-width trace containment, and writes a PCB SVG only after all eight
 signals pass. There is no wall-clock performance assertion. The same fixture,
-test and snapshot can therefore compare baseline and optimized code without a
-machine-dependent pass threshold.
+test can therefore compare baseline and optimized code without a machine-dependent
+pass threshold. Its SVG labels the deterministic number of zero-length board
+clearance queries made during the solve. The stacked fix changes that count in
+the same snapshot while preserving the completed copper. Mock call history is
+cleared periodically to bound instrumentation memory; reported test durations
+include this instrumentation and are separate from uninstrumented benchmarks.
 
 Profiling the original request found repeated board-outline rasterization in
 `GridVisibilitySearch` dominating the first 200 solver steps: 96.3% of samples
@@ -26,4 +30,4 @@ were in grid construction, including 86.2% in the outline-edge loop. A copper
 change invalidates the combined hard-grid cache even when the board and grid
 are unchanged; each surviving cell also uses a generic segment-distance check
 for a zero-length segment. The stacked fix targets this redundant work while
-preserving exact segment validation and the routed snapshot.
+preserving exact segment validation and the routed copper.
