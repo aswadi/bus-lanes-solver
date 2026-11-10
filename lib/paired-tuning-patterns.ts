@@ -23,15 +23,27 @@ interface PairedTuningPattern {
 
 export function createPairedTuningLobes({
   shape,
+  tangentSampling,
   ...options
-}: PairedLobeOptions & { shape: PairedTuningShape }):
-  | [Point[], Point[]]
-  | null {
+}: PairedLobeOptions & {
+  shape: PairedTuningShape
+  /** Balanced lobes sampled as tangent segments; see bipolarPairedLobes. */
+  tangentSampling?: boolean
+}): [Point[], Point[]] | null {
   const { a, b, spacing, deficit, lobes, side, minRadius } = options
   // Existing curve builders retain their legacy signatures and geometry.
   switch (shape) {
     case "bipolar":
-      return bipolarPairedLobes(a, b, spacing, deficit, lobes, side, minRadius)
+      return bipolarPairedLobes(
+        a,
+        b,
+        spacing,
+        deficit,
+        lobes,
+        side,
+        minRadius,
+        tangentSampling,
+      )
     case "rounded":
       return roundedPairedLobes(a, b, spacing, deficit, lobes, side, minRadius)
     case "smooth":

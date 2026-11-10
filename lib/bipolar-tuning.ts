@@ -1,4 +1,5 @@
 import { distance, length } from "./geometry"
+import { ROUNDED_PAIR_ARC_SAMPLES } from "./paired-arc-sampling"
 import type { Point } from "./types"
 /** Balanced rounded serpentine. Both rails are offsets of one centerline. */
 export function bipolarPairedLobes(
@@ -9,6 +10,11 @@ export function bipolarPairedLobes(
   lobes: number,
   side: number,
   minRadius: number,
+  /** Sample each bend as tangent segments of its ideal arcs instead of chords.
+   * Chords of concentric arcs lose spacing * (1 - cos(half the step angle)),
+   * which violates clearance when the pair gap equals it. Tangent segments of
+   * both rails are parallel, so the copper spacing is exact. */
+  tangentSampling = false,
 ): [Point[], Point[]] | null {
   const span = distance(a, b),
     radius = minRadius + spacing / 2,
@@ -38,9 +44,9 @@ export function bipolarPairedLobes(
     }
     vertices.push({ x: span, y: 0 })
     const rails: [Point[], Point[]] = [[], []]
-    const emit = (x: number, y: number, tx: number, ty: number) => {
+    const emit = (x: number, y: number, tx: number, ty: number, scale = 1) => {
       for (let k = 0; k < 2; k++) {
-        const offset = ((k === 0 ? 1 : -1) * spacing) / 2,
+        const offset = ((k === 0 ? 1 : -1) * spacing * scale) / 2,
           px = x - side * ty * offset,
           py = side * y + tx * offset,
           p = { x: a.x + ux * px - uy * py, y: a.y + uy * px + ux * py }
@@ -61,6 +67,29 @@ export function bipolarPairedLobes(
         center = { x: start.x + v.x * radius, y: start.y + v.y * radius },
         turn = u.x * v.y - u.y * v.x,
         angle = Math.atan2(start.y - center.y, start.x - center.x)
+      if (tangentSampling) {
+        // Tangent points at every chord angle; vertices where consecutive
+        // tangents meet, at radius / cos(half step) on the half angles.
+        const step = (turn * Math.PI) / 2 / ROUNDED_PAIR_ARC_SAMPLES
+        for (let j = 0; j <= ROUNDED_PAIR_ARC_SAMPLES + 1; j++) {
+          let theta = angle,
+            scale = 1
+          if (j === ROUNDED_PAIR_ARC_SAMPLES + 1)
+            theta = angle + (turn * Math.PI) / 2
+          else if (j > 0) {
+            theta = angle + (j - 0.5) * step
+            scale = 1 / Math.cos(step / 2)
+          }
+          emit(
+            center.x + scale * radius * Math.cos(theta),
+            center.y + scale * radius * Math.sin(theta),
+            -turn * Math.sin(theta),
+            turn * Math.cos(theta),
+            scale,
+          )
+        }
+        continue
+      }
       for (let j = 0; j <= 18; j++) {
         const theta = angle + (((turn * Math.PI) / 2) * j) / 18
         emit(
@@ -75,7 +104,9 @@ export function bipolarPairedLobes(
     return rails
   }
   const correction =
-      (4 * lobes + 2) * radius * (36 * Math.sin(Math.PI / 72) - 2),
+      (4 * lobes + 2) *
+      radius *
+      (36 * (tangentSampling ? Math.tan : Math.sin)(Math.PI / 72) - 2),
     minHeight = 2 * radius,
     minAddition = 4 * lobes * minHeight + correction
   if (minAddition > deficit + 1e-8) return null

@@ -182,6 +182,7 @@ export function tuneCoupledLengths(
               lobes,
               side,
               minRadius: Math.max(width * 1.2, clearance),
+              tangentSampling: needsTangentSegments,
             })
             if (!waves) continue
             // The first rail is on the opposite side of the signed offset.
