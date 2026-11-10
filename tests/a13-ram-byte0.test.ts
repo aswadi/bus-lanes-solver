@@ -51,5 +51,4 @@ test("routes the real A13 RAM byte with five-mil pad clearance", async (): Promi
       showErrorsInTextOverlay: false,
     },
   })
-  // Shared GitHub runners have taken 150-254 s for this solve.
-}, 600000)
+}, 360000)

@@ -1,0 +1,74 @@
+{
+  "source": {
+    "id": "h616",
+    "title": "Allwinner H616 Devboard DDR3",
+    "repo": "Kononenko-K/Allwinner_H616_Devboard",
+    "commit": "94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4",
+    "path": "Hardware/H616_DDR3/H616_devboard.kicad_pcb",
+    "sourceSha256": "000e11b99a3446da47099c9f1c698cb2266668149edc368152b7d63dcc8a530d",
+    "files": [
+      {
+        "path": "Hardware/H616_DDR3/H616_devboard.kicad_pcb",
+        "sha256": "000e11b99a3446da47099c9f1c698cb2266668149edc368152b7d63dcc8a530d",
+        "bytes": 3171709,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/H616_devboard.kicad_pcb"
+      },
+      {
+        "path": "Hardware/H616_DDR3/H616_devboard.kicad_pro",
+        "sha256": "5e46c7b53a93393830ae86c7431f32450785d73c98688657c94ec77db352ceb1",
+        "bytes": 17833,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/H616_devboard.kicad_pro"
+      },
+      {
+        "path": "Hardware/H616_DDR3/H616_devboard.kicad_sch",
+        "sha256": "c635c6f98939ab300b4609c0464a36b0473c4da0f207ff97614d42219c14fbb8",
+        "bytes": 3339,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/H616_devboard.kicad_sch"
+      },
+      {
+        "path": "Hardware/H616_DDR3/dram.kicad_sch",
+        "sha256": "b813b28706a045f935666b2a3312e9a07dd079f7b3cd342dd274defcff0842e6",
+        "bytes": 235512,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/dram.kicad_sch"
+      },
+      {
+        "path": "Hardware/H616_DDR3/io1.kicad_sch",
+        "sha256": "dec41c80f63160601e8acfd2359924cde2cf174ced1cff8be3ca2bbb3c658483",
+        "bytes": 176576,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/io1.kicad_sch"
+      },
+      {
+        "path": "Hardware/H616_DDR3/io2.kicad_sch",
+        "sha256": "a467bcfb35191cf6f3e5f4de48a829c361a9a1be5b2073c958d844b2e18bd4b0",
+        "bytes": 155528,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/io2.kicad_sch"
+      },
+      {
+        "path": "Hardware/H616_DDR3/power.kicad_sch",
+        "sha256": "85101117111153d5f1abe284e69002379c536af128a80b7cef3e53e76fa8c9d9",
+        "bytes": 293280,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/power.kicad_sch"
+      },
+      {
+        "path": "Hardware/H616_DDR3/usb_uart.kicad_sch",
+        "sha256": "eaf2a58b8ed76e0e123b60cb2fbd4e91817fe4b6fb3fa4fb0e1b28bae43d1ae8",
+        "bytes": 81095,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/Hardware/H616_DDR3/usb_uart.kicad_sch"
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "01f8d458d093c384fd30fcb5cf295e845286a0887c262fe459d7d16243bdaee4",
+        "bytes": 8889,
+        "url": "https://raw.githubusercontent.com/Kononenko-K/Allwinner_H616_Devboard/94fe1071ff3d7c2e6a227a3e4dfccb6acae305c4/LICENSE"
+      }
+    ]
+  },
+  "sourcePcbSha256": "000e11b99a3446da47099c9f1c698cb2266668149edc368152b7d63dcc8a530d",
+  "capture": {
+    "coreRevision": "824663fa918202485ccb2c2b9df1fd3568117199",
+    "busLanesSolverVersion": "0.0.50",
+    "scope": "First eight DDR data signals from the full reference-board TSX reconstruction; all 760 native pad/hole obstacles and the 34-point board outline retained. Existing copper removed. No invented timing constraints.",
+    "srjSha256": "be13e60e0c8aa896d2c262f6f0c1fcf02ddcacb53bf1c2b710a6c339d5b5d900",
+    "coordinateSystem": "Board-world mm, +X right, +Y up; native PCB centered at the board origin."
+  }
+}

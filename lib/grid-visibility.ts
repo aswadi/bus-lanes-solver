@@ -3,6 +3,7 @@ import {
   type LengthSearchLabel,
 } from "./length-search-frontier"
 import { GridComponents } from "./grid-components"
+import { getBoardGrid } from "./board-grid"
 import type { Point, SimpleRouteJson } from "./types"
 import type { GridHeap } from "./grid-heap"
 import { acquireGridScratch, type GridScratchLease } from "./grid-scratch"
@@ -528,6 +529,16 @@ export class GridVisibilitySearch extends GridHistoryProjector {
       this.lengthFrontier = new LengthSearchFrontier()
     let componentIndex = cachedGrid?.components
     if (!cachedGrid) {
+      if (scene.input.outline?.length)
+        this.blocked.set(
+          getBoardGrid({
+            input: scene.input,
+            copperRadiusMm: scene.width / 2,
+            xs: this.xs,
+            ys: this.ys,
+            step: this.stepSize,
+          }),
+        )
       // Adjacent samples of a long segment overlap. Test each cell at most
       // once per copper item, including clear cells in its bounding halo.
       const testedBy = new Uint32Array(n)
@@ -606,12 +617,6 @@ export class GridVisibilitySearch extends GridHistoryProjector {
           markBox(p.x - r, p.x + r, p.y - r, p.y + r, entry)
         }
       }
-      if (scene.input.outline?.length)
-        for (let id = 0; id < n; id++) {
-          if (this.blocked[id]) continue
-          const point = this.point(id)
-          if (!scene.boardEdgeIsClear(point, point)) this.blocked[id] = 1
-        }
       componentIndex = grid?.checkReachability
         ? new GridComponents(this.blocked, this.nx)
         : undefined
