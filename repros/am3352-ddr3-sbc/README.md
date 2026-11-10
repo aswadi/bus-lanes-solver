@@ -16,28 +16,49 @@ matched to 0.635 mm, and the DQS0, DQS1 and CK pairs matched to 0.127 mm with a
 that DDR3 phase, with all 782 pad and hole obstacles and the 259 fanouts as
 supplied copper.
 
-| Capture | TSX | RAM below SoC | DDR layers | `main` (`64ec508`) | With balanced pair lobes at the clearance limit |
-| --- | --- | ---: | --- | --- | --- |
-| `20mm` | [board-20mm.tsx](board-20mm.tsx) | 20 mm | all six | fails: `No shared tuning corridor for DDR_DQS0, DDR_DQSn0` | 50/50 routed and matched |
+| Capture | TSX | RAM below SoC | DDR layers | `main` (`64ec508`) | Balanced pair lobes at the clearance limit | Demand-sized tuning banks |
+| --- | --- | ---: | --- | --- | --- | --- |
+| `20mm` | [board-20mm.tsx](board-20mm.tsx) | 20 mm | all six | fails: `No shared tuning corridor for DDR_DQS0, DDR_DQSn0` | 50/50 routed and matched | 50/50, different copper |
+| `19mm` | [board-19mm.tsx](board-19mm.tsx) | 19 mm | all six | fails, same error | fails, same error | 50/50 routed and matched |
+| `27mm-off-planes` | [board-27mm-off-planes.tsx](board-27mm-off-planes.tsx) | 27 mm | matched buses on top, inner2, inner3, bottom | not run on Linux x64 | fails: `Coupled tuning candidate budget exhausted` | 50/50 routed and matched |
 
 Published `tscircuit@0.0.3131` / Core `0.0.2315` / bus-lanes-solver `0.0.50`
-fails the same way through `tsci build`.
+fails all three through `tsci build`.
+
+## 27 mm, matched buses off both plane layers
+
+![DDR3 phase at 27 mm with the matched buses off the plane layers](ddr-27mm-off-planes.png)
+
+The three matched buses carry `pcbAllowedLayers` of top, inner2, inner3 and
+bottom. The ground plane layer carries no DDR copper. The one trace on inner4
+is DDR_RESETn, which is in no bus and therefore not restricted.
+
+## 19 mm, all six layers
+
+![DDR3 phase at 19 mm, one view per copper layer](ddr-19mm.png)
+
+## 20 mm, all six layers
 
 ![DDR3 phase at 20 mm, one view per copper layer](ddr-20mm.png)
 
 With all six layers allowed the solver puts about 40% of the DDR copper on
-the two plane layers (inner1 and inner4 in the image). That is the released
+the two plane layers (inner1 and inner4 in the images). That is the released
 behaviour and is not changed here.
 
 ```sh
-bun test tests/am3352-ddr3-sbc-20mm.test.ts
-bun repros/am3352-ddr3-sbc/render-png.ts 20mm
-# Run the TSX through the published Core stack and dump the phase inputs:
+bun test tests/am3352-ddr3-sbc-20mm.test.ts tests/am3352-ddr3-sbc-19mm.test.ts \
+  tests/am3352-ddr3-sbc-27mm-off-planes.test.ts
+bun repros/am3352-ddr3-sbc/render-png.ts 20mm 19mm 27mm-off-planes
+# Run a TSX through the published Core stack and dump the phase inputs:
 bunx tscircuit build --disable-parts-engine --autorouter-dump-srj all \
-  --autorouter-debug-dir /tmp/am3352-ddr3-sbc repros/am3352-ddr3-sbc/board-20mm.tsx
+  --autorouter-debug-dir /tmp/am3352-ddr3-sbc repros/am3352-ddr3-sbc/board-19mm.tsx
 ```
 
-The solve takes about 2.5 minutes on Linux x64.
+On Linux x64 the 20 mm and 19 mm solves take about 2.5 to 3 minutes each and
+the 27 mm solve about 11 minutes.
+
+Not covered: with the matched buses off the plane layers, 20 to 25 mm still
+fail on every revision (measured on macOS arm64).
 
 Each image is a PNG render of a test-owned snapshot in
 [tests/__snapshots__](../../tests/__snapshots__). A failed solve records native
