@@ -100,11 +100,26 @@ test("an omitted fixed-via diameter keeps the same clearance as the explicit con
   expect(gap).toBeGreaterThanOrEqual(clearance - 1e-8)
   expectCompletedRouting(solver, input)
   expect(solver.traces).toEqual(control.solver.traces)
-  await expect(
-    nativePairCircuit({ input, traces: solver.traces }),
-  ).toMatchPcbSnapshot({
+  const circuit = nativePairCircuit({ input, traces: solver.traces })
+  circuit.push({
+    type: "pcb_note_text",
+    pcb_note_text_id: "via_clearance_result",
+    pcb_group_id: "via_clearance_result",
+    text: `DRC PASS   SIG to GND via clearance ${gap.toFixed(6)} mm`,
+    anchor_position: { x: 0, y: -1.65 },
+    anchor_alignment: "center",
+    layer: "top",
+    font: "tscircuit2024",
+    font_size: 0.18,
+  })
+  await expect(circuit).toMatchPcbSnapshot({
     testPath: import.meta.path,
-    svgOptions: { width: 720, height: 360, showSolderMask: false },
+    svgOptions: {
+      width: 900,
+      height: 450,
+      showSolderMask: false,
+      viewport: { minX: -4.3, maxX: 4.3, minY: -2.15, maxY: 2.15 },
+    },
   })
 })
 
