@@ -1,0 +1,76 @@
+{
+  "board": {
+    "title": "AM3352 + DDR3 SBC (from-scratch tscircuit TSX, not a manufactured design)",
+    "tsx": "repros/am3352-ddr3-sbc/board-27mm-off-planes.tsx",
+    "layers": [
+      "top",
+      "inner1",
+      "inner2",
+      "inner3",
+      "inner4",
+      "bottom"
+    ],
+    "planes": {
+      "inner1": "GND",
+      "inner4": "VDD_DDR, VDD_3V3A"
+    }
+  },
+  "capture": {
+    "tool": "tscircuit@0.0.3131",
+    "core": "@tscircuit/core@0.0.2315",
+    "busLanesSolver": "@tscircuit/bus-lanes-solver@0.0.50",
+    "runtime": "bun 1.4.2, macOS arm64",
+    "command": "tsci build --disable-parts-engine --autorouter-dump-srj all --autorouter-debug-dir <dir> repros/am3352-ddr3-sbc/board-27mm-off-planes.tsx",
+    "phase": "phase-3.input.simple-route.json (DDR_BUS_LANES, after PLANE_FANOUT_SOC, PLANE_FANOUT_RAM, PLANE_FANOUT_PARTS)",
+    "circuitJson": "Circuit JSON of the same build after the released solver failed the DDR phase: no DDR copper. Errors, warnings, pours, solder paste, courtyards, fabrication notes, CAD and schematic elements removed."
+  },
+  "inputSha256": "50a736512aa9077d60165a27eadb207d407134c0244c2a6f1edf2c45424e41f3",
+  "circuitSha256": "6ce79f22f205a5fa8d38275a8907869ff91022c1fae6f867eb4b602eb9bea91b",
+  "connections": 50,
+  "obstacles": 782,
+  "fixedTraces": 259,
+  "fixedVias": 259,
+  "circuitElements": 4176,
+  "layerCount": 6,
+  "buses": [
+    {
+      "busId": "DDR_BYTE0",
+      "signals": 11,
+      "maxLengthSkew": 0.635
+    },
+    {
+      "busId": "DDR_BYTE1",
+      "signals": 11,
+      "maxLengthSkew": 0.635
+    },
+    {
+      "busId": "DDR_ADDR_CTRL",
+      "signals": 27,
+      "maxLengthSkew": 0.635
+    }
+  ],
+  "pairs": [
+    {
+      "traceGap": 0.1,
+      "lengthTolerance": 0.127
+    },
+    {
+      "traceGap": 0.1,
+      "lengthTolerance": 0.127
+    },
+    {
+      "traceGap": 0.1,
+      "lengthTolerance": 0.127
+    }
+  ],
+  "bounds": {
+    "minX": -40,
+    "maxX": 32,
+    "minY": -36,
+    "maxY": 34
+  },
+  "sizes": {
+    "input.srj.json.gz": 157310,
+    "unrouted.circuit.json.gz": 72944
+  }
+}
