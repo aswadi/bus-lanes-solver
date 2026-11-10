@@ -415,6 +415,9 @@ export class BusLanesPipelineSolver extends BaseSolver {
   private child?: BusLanesSolver
   private escapes: Trace[] = []
   private attempt = 0
+  /** Layer attempt that routes unconstrained signals with the matched buses. */
+  private jointAttempt = -1
+  private matchedWithDemandSizedBanks = false
   private completedLanes: Trace[] = []
   private remainingInput?: SimpleRouteJson
   private followingInput?: SimpleRouteJson
@@ -1276,7 +1279,12 @@ export class BusLanesPipelineSolver extends BaseSolver {
           busNames.has(c.name),
         ),
       })
-    if (matching.length && remaining.length && !joint) {
+    if (
+      matching.length &&
+      remaining.length &&
+      !joint &&
+      this.jointAttempt !== this.attempt
+    ) {
       this.remainingInput = {
         ...laneInput,
         connections: remaining,
@@ -1488,6 +1496,7 @@ export class BusLanesPipelineSolver extends BaseSolver {
         this.followingInput = undefined
       }
       if (this.child!.solved && this.remainingInput) {
+        this.matchedWithDemandSizedBanks ||= this.child!.usedDemandSizedBanks
         this.completedLanes.push(...this.child!.traces)
         this.siteRematch = rematchTrappedSignalDogbones(
           this.routingInput,
@@ -1616,6 +1625,23 @@ export class BusLanesPipelineSolver extends BaseSolver {
       this.surfaceFinishing = undefined
       this.siteRematch?.return({ connections: [], escapes: [] })
       this.siteRematch = undefined
+      // Demand-sized banks leave no corridor for signals routed afterwards.
+      // Give those signals their own lanes inside the same banks instead.
+      if (
+        this.matchedWithDemandSizedBanks &&
+        this.jointAttempt !== this.attempt
+      ) {
+        this.matchedWithDemandSizedBanks = false
+        this.jointAttempt = this.attempt
+        this.child = undefined
+        this.escapes = []
+        this.completedLanes = []
+        this.remainingInput = undefined
+        this.followingInput = undefined
+        this.phase = "retry_jointly"
+        return
+      }
+      this.matchedWithDemandSizedBanks = false
       this.attempt++
       if (
         this.options.fanout !== "none" &&

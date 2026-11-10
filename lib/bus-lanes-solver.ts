@@ -15,6 +15,7 @@ import { bevelPairApproaches } from "./bevel-pair-approaches"
 import { routeAnglesAreConventional } from "./route-angle-validation"
 import { chamferOrdinaryCorners } from "./chamfer-ordinary-corners"
 import { spreadCoupledTuningLanes } from "./spread-coupled-tuning-lanes"
+import { spreadDemandSizedTuningLanes } from "./spread-demand-sized-tuning-lanes"
 import { simplifyMatchedTraces } from "./simplify-matched-traces"
 import { tuneCoupledLengths } from "./tune-coupled-lengths"
 import { negotiateLanes } from "./negotiate-lanes"
@@ -527,6 +528,8 @@ export class BusLanesSolver extends BaseSolver {
       this.retry()
     }
   }
+  /** The accepted tuning banks fill the corridor between the packages. */
+  usedDemandSizedBanks = false
   private match() {
     const input = this.input
     const original = this.traces
@@ -542,6 +545,7 @@ export class BusLanesSolver extends BaseSolver {
     const compactCorridors = new WeakSet<Trace[]>()
     const demandPackedCorridors = new WeakSet<Trace[]>()
     const narrowCorridors = new WeakSet<Trace[]>()
+    const demandSizedCorridors = new WeakSet<Trace[]>()
     const packBanks =
       this.options.smoothTuning && original.some((t) => t.coupledSection)
     function* candidates() {
@@ -626,6 +630,13 @@ export class BusLanesSolver extends BaseSolver {
             "diagonal",
           )
           if (spread) yield spread
+        }
+        // Uniform banks failed. Size every bank to its own length deficit.
+        const sized = spreadDemandSizedTuningLanes(input, original)
+        if (sized) {
+          compactCorridors.add(sized)
+          demandSizedCorridors.add(sized)
+          yield sized
         }
         return
       }
@@ -742,6 +753,7 @@ export class BusLanesSolver extends BaseSolver {
               )
             )
               throw Error("Length tuning separated the exterior pair rails")
+            this.usedDemandSizedBanks = demandSizedCorridors.has(corridor)
             this.phase = "validate_output"
             return
           } catch (e) {

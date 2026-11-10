@@ -73,6 +73,12 @@ export function spreadCoupledTuningLanes(
   pitch: number,
   style: "dogleg" | "diagonal" | "interior" = "dogleg",
   packUnconstrained = false,
+  /** Lateral room in mm each connection's tuning pattern needs beyond its own
+   * centerline. When present, every bank is as wide as its occupant requires
+   * instead of one uniform pitch. */
+  demandStrips?: Map<string, number>,
+  /** Receives the straight length in mm of every connection's opened bank. */
+  bankRuns?: Map<string, number>,
 ): Trace[] | null {
   let result = alignCoupledSectionBoundaries(input, structuredClone(traces))
   const clearance =
@@ -184,6 +190,13 @@ export function spreadCoupledTuningLanes(
       }
     }
     const width = Math.max(...members.map((t) => (t.route[0] as Wire).width))
+    const strip = (channel: Channel) =>
+      Math.max(
+        0,
+        ...channel.traces.map(
+          (t) => demandStrips?.get(t.connection_name!) ?? 0,
+        ),
+      )
     let start = Math.max(...channels.map((c) => c.path[0].x)) + width * 2
     let end = Math.min(...channels.map((c) => c.path.at(-1)!.x)) - width * 2
     // Deep package terminals do not bound the open space between components.
@@ -251,6 +264,7 @@ export function spreadCoupledTuningLanes(
           ) +
           extra * width
         const replacements: Trace[] = []
+        const runs = new Map<string, number>()
         for (const [side, group] of [
           [-1, cuts.slice(0, split).toReversed()],
           [1, cuts.slice(split)],
@@ -269,16 +283,31 @@ export function spreadCoupledTuningLanes(
             const paired = [inner, outer].some((c) =>
               c.traces.some((t) => highDemandPairs.has(t.connection_name!)),
             )
-            const gap = packUnconstrained
-              ? Math.max(
-                  (inner.width + outer.width) / 2 + clearance + width * 0.2,
-                  paired ? pitch * 2 : tuning ? pitch : 0,
-                )
-              : pitch
-            if (packUnconstrained) distances[i] = distances[i + 1] + gap
+            const gap = demandStrips
+              ? (inner.width + outer.width) / 2 +
+                clearance +
+                width * 0.2 +
+                strip(outer) +
+                // Balanced pair lobes also swing away from the center.
+                (inner.traces.length > 1 ? strip(inner) : 0)
+              : packUnconstrained
+                ? Math.max(
+                    (inner.width + outer.width) / 2 + clearance + width * 0.2,
+                    paired ? pitch * 2 : tuning ? pitch : 0,
+                  )
+                : pitch
+            if (packUnconstrained || demandStrips)
+              distances[i] = distances[i + 1] + gap
           }
           const sideExtent = Math.max(
-            packUnconstrained ? distances[0] + pitch : extent,
+            demandStrips
+              ? distances[0] +
+                  strip(group[0].channel) +
+                  (group[0].channel.width + clearance) / 2 +
+                  width * 0.2
+              : packUnconstrained
+                ? distances[0] + pitch
+                : extent,
             ...group.map(
               (c, i) =>
                 Math.max(
@@ -352,6 +381,12 @@ export function spreadCoupledTuningLanes(
             )
             if (!path) continue
             const channel = c.channel
+            for (const trace of channel.traces)
+              runs.set(
+                trace.connection_name!,
+                (style === "interior" ? exit - entry : bottom - top) -
+                  3 * width,
+              )
             if (channel.traces.length === 1) {
               const trace = channel.traces[0]
               replacements.push({
@@ -432,6 +467,7 @@ export function spreadCoupledTuningLanes(
             ),
         )
         if (bad.length) continue
+        for (const [name, run] of runs) bankRuns?.set(name, run)
         accepted = combined
         break attempts
       }
