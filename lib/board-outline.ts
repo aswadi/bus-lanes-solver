@@ -1,4 +1,8 @@
-import { distance, segmentDistance } from "./geometry"
+import {
+  distance,
+  pointSegmentDistanceToPoints,
+  segmentDistance,
+} from "./geometry"
 import type { Point, SimpleRouteJson, Trace } from "./types"
 
 const epsilon = 1e-9
@@ -77,6 +81,15 @@ export function boardSegmentIsClear({
     return false
   const ring = input.outline
   if (!ring?.length) return true
+  if (start.x === end.x && start.y === end.y)
+    return (
+      inside(start, ring) &&
+      ring.every(
+        (p, i) =>
+          pointSegmentDistanceToPoints(start, p, ring[(i + 1) % ring.length]) >=
+          margin - epsilon,
+      )
+    )
   if (!inside(start, ring) || !inside(end, ring)) return false
   return ring.every(
     (p, i) =>
