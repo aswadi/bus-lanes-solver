@@ -7,6 +7,7 @@ import {
   getRouteViaSpanLayers,
 } from "@tscircuit/fanout-solver"
 import { effectiveCarrierLayers } from "./effective-carrier-layers"
+import { selectBranchAttachment } from "./select-branch-attachment"
 import type {
   Connection,
   Obstacle,
@@ -162,9 +163,15 @@ export function* routeMultiTerminalBuses(
       })
       if (!attachments.length)
         throw Error("No routed copper for a multi-terminal branch")
+      const attachment = yield* selectBranchAttachment({
+        input: { ...input, traces: [...(input.traces ?? []), ...completed] },
+        connection,
+        terminal,
+        attachments,
+      })
       const branch = {
         ...connection,
-        pointsToConnect: [attachments[0], terminal],
+        pointsToConnect: [attachment, terminal],
       }
       const group = branches.get(terminal.layer) ?? []
       group.push(branch)
