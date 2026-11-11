@@ -9,8 +9,13 @@ import {
 import { getSvgFromGraphicsObject } from "graphics-debug"
 import { BusLanesPipelineSolver, BusLanesSolver } from "../../lib"
 import { GridVisibilitySearch } from "../../lib/grid-visibility"
-import type { Connection, SimpleRouteJson } from "../../lib/types"
+import type { Connection, SimpleRouteJson, Trace } from "../../lib/types"
 import { fixedCopper, VectorScene } from "../../lib/vector-scene"
+
+type PhysicalInput = SimpleRouteJson & {
+  obstacles: (SimpleRouteJson["obstacles"][number] & { type: "rect" })[]
+  traces: (Trace & { connection_name: string })[]
+}
 
 test("ButterStick RAM branches leave the native UDM pin reachable", async (): Promise<void> => {
   const { inputSrj, physicalInputSrj, futureConnection } = JSON.parse(
@@ -24,7 +29,7 @@ test("ButterStick RAM branches leave the native UDM pin reachable", async (): Pr
     ).toString(),
   ) as {
     inputSrj: SimpleRouteJson
-    physicalInputSrj: SimpleRouteJson
+    physicalInputSrj: PhysicalInput
     futureConnection: Connection
   }
   const original = structuredClone(inputSrj)
@@ -35,9 +40,13 @@ test("ButterStick RAM branches leave the native UDM pin reachable", async (): Pr
   expect(solver.error).toBeNull()
   expect(inputSrj).toEqual(original)
 
+  const traces = solver.traces.map((trace) => {
+    if (!trace.connection_name) throw Error("Completed DDR trace has no owner")
+    return { ...trace, connection_name: trace.connection_name }
+  })
   const output = {
     ...physicalInputSrj,
-    traces: [...physicalInputSrj.traces!, ...solver.traces],
+    traces: [...physicalInputSrj.traces, ...traces],
   }
   const context = { inputSrj: physicalInputSrj, routedSrj: output }
   const connectivity = validateOriginalEndpointConnectivity(context)
@@ -47,7 +56,7 @@ test("ButterStick RAM branches leave the native UDM pin reachable", async (): Pr
   expect(
     validateRoutedCopperDrc({
       ...context,
-      clearance: inputSrj.minTraceToPadEdgeClearance,
+      clearance: inputSrj.minTraceToPadEdgeClearance!,
       allowBlindAndBuriedVias: false,
     }).issues,
   ).toEqual([])
