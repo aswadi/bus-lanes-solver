@@ -546,6 +546,7 @@ export class BusLanesSolver extends BaseSolver {
     const demandPackedCorridors = new WeakSet<Trace[]>()
     const narrowCorridors = new WeakSet<Trace[]>()
     const demandSizedCorridors = new WeakSet<Trace[]>()
+    const boardAwareCorridors = new WeakSet<Trace[]>()
     const packBanks =
       this.options.smoothTuning && original.some((t) => t.coupledSection)
     function* candidates() {
@@ -638,6 +639,18 @@ export class BusLanesSolver extends BaseSolver {
           demandSizedCorridors.add(sized)
           yield sized
         }
+        // On a populated board other parts' vias and pads sit inside the
+        // tuning window, and a lane can carry a kink where it steps past a
+        // via. Fit the banks to the board.
+        const fitted = spreadDemandSizedTuningLanes(input, original, {
+          boardAware: true,
+        })
+        if (fitted) {
+          compactCorridors.add(fitted)
+          demandSizedCorridors.add(fitted)
+          boardAwareCorridors.add(fitted)
+          yield fitted
+        }
         return
       }
       const width = Math.max(...original.map((t) => (t.route[0] as Wire).width))
@@ -726,6 +739,7 @@ export class BusLanesSolver extends BaseSolver {
                   packageOnlyPairTuning,
                   protectPairedTerminalVias:
                     this.options.protectPairedTerminalVias,
+                  allowKinks: boardAwareCorridors.has(corridor),
                 },
               )
             } else {
@@ -809,6 +823,9 @@ export class BusLanesSolver extends BaseSolver {
         !tuningPathIsSelfClear(
           t.route,
           this.widths.get(c.name)! / 2 + scene.margin,
+          // A lane may step a few hundredths of a mm past a via. That kink
+          // is one copper body, not a returning arm.
+          { allowKinks: true },
         )
       )
         throw Error("Final self-clearance violation")

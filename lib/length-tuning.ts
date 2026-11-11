@@ -153,8 +153,17 @@ export function tuneLengths(
 }
 
 /** Returning arms must retain clearance; adjacent monotone corner geometry
- * belongs to the same uninterrupted copper body. */
-export function tuningPathIsSelfClear(path: Point[], required: number) {
+ * belongs to the same uninterrupted copper body.
+ *
+ * `allowKinks`: two segments that bypass less copper than the spacing itself
+ * (and at least a tenth of it) and do not head back toward each other are a
+ * kink around an obstacle, such as the 0.05 mm step a lane takes past a via,
+ * not a returning arm. Crossings are never exempted. */
+export function tuningPathIsSelfClear(
+  path: Point[],
+  required: number,
+  { allowKinks }: { allowKinks?: boolean } = {},
+) {
   const cumulative = [0]
   const turning = [0]
   const unsafeBends = [0]
@@ -198,6 +207,18 @@ export function tuningPathIsSelfClear(path: Point[], required: number) {
     const separation = segmentDistance([a, b], [c, d])
     if (separation < 1e-9 && cumulative[j] - cumulative[i + 1] > 1e-8)
       return false
+    // A kink bypasses less copper than the spacing and keeps its heading. A
+    // hairpin with a short turn reverses and stays subject to the spacing.
+    // Sub-feature backsteps are numerical debris for normalization to remove,
+    // not kinks.
+    const bypassed = cumulative[j] - cumulative[i + 1]
+    if (
+      allowKinks &&
+      bypassed <= required + 1e-8 &&
+      bypassed >= required / 10 &&
+      (b.x - a.x) * (d.x - c.x) + (b.y - a.y) * (d.y - c.y) >= -1e-12
+    )
+      return true
     // Chords on the same smooth bend can be closer than the clearance while
     // forming one uninterrupted copper body. Check returning arms outside a
     // half-circle neighborhood; intersections above are never exempted.

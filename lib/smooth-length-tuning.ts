@@ -36,6 +36,8 @@ export function tuneSmoothLengths(
      * still be resolved before accepting the complete circuit. */
     candidateScore?: (trace: Trace) => number
     alignPeriods?: boolean
+    /** Accept kinks in routed copper; see tuningPathIsSelfClear. */
+    allowKinks?: boolean
   } = {},
 ) {
   let attempted = 0
@@ -244,7 +246,9 @@ export function tuneSmoothLengths(
                 continue
               if (
                 !terminalViaCopperIsClear(next) ||
-                !tuningPathIsSelfClear(next, returnSpacing)
+                !tuningPathIsSelfClear(next, returnSpacing, {
+                  allowKinks: options.allowKinks,
+                })
               )
                 continue
               const candidate: Trace = {

@@ -8,7 +8,13 @@ import { interPackageTuningWindow } from "./inter-package-tuning-window"
 import { offsetPath } from "./coupled-pair-routing"
 import { distance, simplify } from "./geometry"
 import { tuningPathIsSelfClear } from "./length-tuning"
-import { fixedCopper, routeCopper, VectorScene } from "./vector-scene"
+import {
+  type Copper,
+  copperTooClose,
+  fixedCopper,
+  routeCopper,
+  VectorScene,
+} from "./vector-scene"
 import type { Point, SimpleRouteJson, Trace, Wire } from "./types"
 
 type Channel = { traces: Trace[]; path: Point[]; width: number }
@@ -79,6 +85,12 @@ export function spreadCoupledTuningLanes(
   demandStrips?: Map<string, number>,
   /** Receives the straight length in mm of every connection's opened bank. */
   bankRuns?: Map<string, number>,
+  /** Fit the banks into a populated board. When no layout fits the whole
+   * window, move the window's ends past the supplied copper that blocks a
+   * bank and try again: other parts' vias and pads often sit just outside a
+   * package's own pad field. Kinks in the routed approaches are accepted;
+   * see tuningPathIsSelfClear. */
+  boardAware = false,
 ): Trace[] | null {
   let result = alignCoupledSectionBoundaries(input, structuredClone(traces))
   const clearance =
@@ -211,19 +223,24 @@ export function spreadCoupledTuningLanes(
     start = Math.max(start, window.start)
     end = Math.min(end, window.end)
     if (end - start < pitch * 2) return null
-    let accepted: Trace[] | undefined
-    attempts: for (const trim of [0, 0.05, 0.1, 0.2]) {
-      const lo = start + (end - start) * trim,
-        hi = end - (end - start) * trim
+    const supplied = boardAware ? fixedCopper(input) : []
+    const suppliedSet = new Set(supplied)
+    /** Open the banks between two cuts across the corridor. A rejected
+     * layout reports the supplied copper that blocked it. */
+    const openBanks = (
+      lo: number,
+      hi: number,
+    ): { accepted?: Trace[]; blockers: Copper[] } => {
+      const blockers = new Set<Copper>()
       const cuts = channels.map((c) => ({
         channel: c,
         a: cut(c.path, lo),
         b: cut(c.path, hi),
       }))
-      if (cuts.some((c) => !c.a || !c.b)) continue
+      if (cuts.some((c) => !c.a || !c.b)) return { blockers: [] }
       cuts.sort((a, b) => a.a!.point.y - b.a!.point.y)
       if (cuts.some((c, i) => i > 0 && c.b!.point.y < cuts[i - 1].b!.point.y))
-        continue
+        return { blockers: [] }
       const minV = Math.min(
           ...cuts.flatMap((c) => [c.a!.point.y, c.b!.point.y]),
         ),
@@ -255,7 +272,7 @@ export function spreadCoupledTuningLanes(
               clearance,
             )
           : null
-      if (style === "interior" && (!entries || !exits)) continue
+      if (style === "interior" && (!entries || !exits)) return { blockers: [] }
       for (const extra of style === "interior" ? [1] : [1, 2, 3]) {
         const extent =
           Math.max(
@@ -452,7 +469,10 @@ export function spreadCoupledTuningLanes(
             replacements.find((r) => r.connection_name === t.connection_name) ??
             t,
         )
-        const copper = [...fixedCopper(input), ...combined.flatMap(routeCopper)]
+        const copper = [
+          ...(boardAware ? supplied : fixedCopper(input)),
+          ...combined.flatMap(routeCopper),
+        ]
         const bad = replacements.filter(
           (t) =>
             !new VectorScene(
@@ -464,12 +484,85 @@ export function spreadCoupledTuningLanes(
             !tuningPathIsSelfClear(
               t.route,
               (t.route[0] as Wire).width + clearance,
+              { allowKinks: boardAware },
             ),
         )
-        if (bad.length) continue
+        if (bad.length) {
+          if (boardAware)
+            for (const t of bad) {
+              const scene = new VectorScene(
+                input,
+                input.connections.find((c) => c.name === t.connection_name)!,
+                (t.route[0] as Wire).width,
+                copper,
+              )
+              const blocked = t.route.findIndex(
+                (point, k) => k > 0 && !scene.visible(t.route[k - 1], point),
+              )
+              if (blocked < 1) continue
+              const hit = scene.copper.find(
+                (c) =>
+                  suppliedSet.has(c) &&
+                  copperTooClose(
+                    t.route[blocked - 1],
+                    t.route[blocked],
+                    c,
+                    scene.margin - 1e-8,
+                  ),
+              )
+              if (hit) blockers.add(hit)
+            }
+          continue
+        }
         for (const [name, run] of runs) bankRuns?.set(name, run)
-        accepted = combined
-        break attempts
+        return { accepted: combined, blockers: [] }
+      }
+      return { blockers: [...blockers] }
+    }
+    let accepted: Trace[] | undefined
+    for (const trim of [0, 0.05, 0.1, 0.2]) {
+      accepted = openBanks(
+        start + (end - start) * trim,
+        end - (end - start) * trim,
+      ).accepted
+      if (accepted) break
+    }
+    if (!accepted && boardAware) {
+      let lo = start,
+        hi = end
+      for (let pass = 0; pass < 24 && hi - lo >= pitch * 2; pass++) {
+        const tried = openBanks(lo, hi)
+        accepted = tried.accepted
+        if (accepted) break
+        let moved = false
+        for (const blocker of tried.blockers) {
+          const along = [uv(blocker.a).x, uv(blocker.b).x]
+          const reach = blocker.radius + clearance + width
+          if ((along[0] + along[1]) / 2 < (lo + hi) / 2) {
+            const next = Math.max(...along) + reach
+            if (next > lo + 1e-9) {
+              lo = next
+              moved = true
+            }
+          } else {
+            const next = Math.min(...along) - reach
+            if (next < hi - 1e-9) {
+              hi = next
+              moved = true
+            }
+          }
+        }
+        // A blocker already behind the cut can still touch the bank entry.
+        if (!moved && tried.blockers.length) {
+          const near = tried.blockers.some(
+            (blocker) =>
+              (uv(blocker.a).x + uv(blocker.b).x) / 2 < (lo + hi) / 2,
+          )
+          if (near) lo += width * 2
+          else hi -= width * 2
+          moved = true
+        }
+        if (!moved) break
       }
     }
     if (!accepted) return null

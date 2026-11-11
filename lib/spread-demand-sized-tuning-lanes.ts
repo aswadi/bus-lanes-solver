@@ -75,7 +75,12 @@ function pairedBankSwing(
 export function spreadDemandSizedTuningLanes(
   input: SimpleRouteJson,
   traces: Trace[],
-  options: { maxRounds?: number; headroom?: number } = {},
+  options: {
+    maxRounds?: number
+    headroom?: number
+    /** Fit the banks into a populated board; see spreadCoupledTuningLanes. */
+    boardAware?: boolean
+  } = {},
 ): Trace[] | null {
   const clearance =
     input.minTraceToPadEdgeClearance ?? input.defaultObstacleMargin ?? 0.075
@@ -93,6 +98,7 @@ export function spreadDemandSizedTuningLanes(
       false,
       strips,
       bankRuns,
+      options.boardAware,
     )
     if (!spread) return best
     best = spread
