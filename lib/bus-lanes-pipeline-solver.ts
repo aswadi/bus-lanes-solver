@@ -988,8 +988,6 @@ export class BusLanesPipelineSolver extends BaseSolver {
         boardEdgeClearance: this.routingInput.minBoardEdgeClearance,
         holeToHoleClearance:
           this.routingInput.minViaHoleEdgeToViaHoleEdgeClearance,
-        allowBlindAndBuriedVias:
-          this.routingInput.allowBlindAndBuriedVias ?? false,
       },
       this.attempt,
     )

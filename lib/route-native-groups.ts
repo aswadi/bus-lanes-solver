@@ -157,7 +157,6 @@ export function* routeNativeGroups(
           holeToHoleClearance:
             input.minViaHoleEdgeToViaHoleEdgeClearance ?? 0.1,
           boardEdgeClearance: input.minBoardEdgeClearance,
-          allowBlindAndBuriedVias: false,
         },
         attempt,
       )
