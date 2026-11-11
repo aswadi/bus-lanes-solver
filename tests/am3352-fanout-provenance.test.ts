@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { FanoutSolver } from "@tscircuit/fanout-solver"
+import { FanoutSolver } from "@tscircuit/am3352-fanout-generator"
 import {
   am3352Hash,
   getAm3352FanoutGeneratorIdentity,
@@ -8,7 +8,11 @@ import {
 } from "../scripts/am3352-samples"
 
 test("fixed AM3352 and RAM power copper exactly replays the recorded FanoutSolver", async () => {
-  const installedGenerator = await getAm3352FanoutGeneratorIdentity()
+  // Replay with the exact recorded generator; updating the active router must
+  // not rewrite immutable fanout fixtures or mislabel their provenance.
+  const installedGenerator = await getAm3352FanoutGeneratorIdentity(
+    "@tscircuit/am3352-fanout-generator",
+  )
   for (const component of ["soc", "ram"] as const) {
     const record = await loadAm3352FanoutRecord(component)
     const { input, options } = await prepareAm3352PowerFanout(component)

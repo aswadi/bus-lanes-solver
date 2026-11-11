@@ -23,6 +23,7 @@
     "@biomejs/biome": "2.5.15",
     "@flatten-js/core": "1.6.2",
     "@tscircuit/alphabet": "0.0.25",
+    "@tscircuit/am3352-fanout-generator": "github:tscircuit/fanout-solver#e202cef0a97f59bb9a72357e8eeb5e9f1349529e",
     "@tscircuit/checks": "0.0.264",
     "@tscircuit/circuit-json-util": "0.0.119",
     "@tscircuit/fanout-solver": "github:tscircuit/fanout-solver#1c726cc7cfdd2ce0c93b928a133b918d301dcdf4",
