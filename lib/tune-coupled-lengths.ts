@@ -56,6 +56,8 @@ export function tuneCoupledLengths(
     packageOnlyPairTuning?: boolean
     protectPairedTerminalVias?: boolean
     priorityConnectionNames?: string[]
+    /** Accept kinks in routed copper; see tuningPathIsSelfClear. */
+    allowKinks?: boolean
   } = {},
 ): Trace[] {
   // First fix pair skew without allowing the individual tuner into the corridor.
@@ -234,7 +236,9 @@ export function tuneCoupledLengths(
                     width,
                     copper,
                   ).pathVisible(t.route) ||
-                  !tuningPathIsSelfClear(t.route, width + clearance) ||
+                  !tuningPathIsSelfClear(t.route, width + clearance, {
+                    allowKinks: options.allowKinks,
+                  }) ||
                   totalTraceLength(input, t) <
                     targets.get(t.connection_name!)! - 1e-6,
               )
