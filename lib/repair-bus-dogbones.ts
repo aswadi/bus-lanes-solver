@@ -32,7 +32,6 @@ export function signalDogboneOptions(
       input.minTraceToPadEdgeClearance ?? input.defaultObstacleMargin ?? 0.075,
     boardEdgeClearance: input.minBoardEdgeClearance,
     holeToHoleClearance: input.minViaHoleEdgeToViaHoleEdgeClearance,
-    allowBlindAndBuriedVias: input.allowBlindAndBuriedVias ?? false,
   }
 }
 

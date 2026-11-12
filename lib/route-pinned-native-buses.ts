@@ -135,7 +135,6 @@ export function* routePinnedNativeBuses(
         0.075,
       holeToHoleClearance: input.minViaHoleEdgeToViaHoleEdgeClearance,
       boardEdgeClearance: input.minBoardEdgeClearance,
-      allowBlindAndBuriedVias: false,
     },
     0,
   )

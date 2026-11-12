@@ -135,9 +135,11 @@ export const am3352Hash = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex")
 
 /** Fingerprint the installed generator, without requiring a Git checkout. */
-export async function getAm3352FanoutGeneratorIdentity(): Promise<FanoutGeneratorIdentity> {
+export async function getAm3352FanoutGeneratorIdentity(
+  packageName = "@tscircuit/fanout-solver",
+): Promise<FanoutGeneratorIdentity> {
   const packageRoot = dirname(
-    dirname(Bun.resolveSync("@tscircuit/fanout-solver", import.meta.dir)),
+    dirname(Bun.resolveSync(packageName, import.meta.dir)),
   )
   const packageJson = await Bun.file(
     resolve(packageRoot, "package.json"),
@@ -157,7 +159,7 @@ export async function getAm3352FanoutGeneratorIdentity(): Promise<FanoutGenerato
   return {
     name: packageJson.name,
     version: packageJson.version,
-    dependency: solverPackage.devDependencies["@tscircuit/fanout-solver"],
+    dependency: solverPackage.devDependencies[packageName],
     sourceSha256: sourceHash.digest("hex"),
   }
 }

@@ -302,7 +302,6 @@ export function* rematchTrappedSignalDogbones(
               0.075,
             holeToHoleClearance: native.minViaHoleEdgeToViaHoleEdgeClearance,
             boardEdgeClearance: native.minBoardEdgeClearance,
-            allowBlindAndBuriedVias: native.allowBlindAndBuriedVias ?? false,
           },
         )
       } catch {
