@@ -31,12 +31,17 @@ export async function routeAm3352Ddr3Sbc({
   fixture,
   spacingMm,
   testPath,
+  comparePicture = true,
 }: {
   /** Directory suffix under tests/fixtures/am3352-ddr3-sbc-. */
   fixture: string
   /** SoC centre to RAM centre, mm. */
   spacingMm: number
   testPath: string
+  /** False for a capture whose copper is not reproducible across x64
+   * machines. Its picture is then only written, on request, after all
+   * acceptance checks pass (BUN_UPDATE_SNAPSHOTS=1), and never compared. */
+  comparePicture?: boolean
 }): Promise<void> {
   const input = load<SimpleRouteJson>(fixture, "input.srj.json.gz")
   const circuit = load<AnyCircuitElement[]>(fixture, "unrouted.circuit.json.gz")
@@ -125,11 +130,22 @@ export async function routeAm3352Ddr3Sbc({
     )
   }
 
+  // The job log records the outcome whether or not a picture is compared.
+  console.log([title, ...lines].join("\n"))
+
   // The lane search takes a different path on other JavaScriptCore builds
   // (macOS arm64 completes the same boards with different copper), so the
   // picture is compared on the CI platform only. Every check above and below
   // runs everywhere.
-  if (process.platform === "linux" && process.arch === "x64")
+  const recording =
+    Boolean(process.env.BUN_UPDATE_SNAPSHOTS) ||
+    process.argv.includes("--update-snapshots") ||
+    process.argv.includes("-u")
+  if (
+    process.platform === "linux" &&
+    process.arch === "x64" &&
+    (comparePicture || recording)
+  )
     await expect(circuit).toMatchLayeredPcbSnapshot({
       testPath,
       title,
