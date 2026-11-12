@@ -950,7 +950,7 @@ export class BusLanesPipelineSolver extends BaseSolver {
           return crossings * (this.attempt === 1 ? 0 : 4) + load.get(layer)!
         }
         return (
-          (group.size > 2
+          (group.size > 2 || preferred.length > 0
             ? rank(a) - rank(b) || via || crossingCost(a) - crossingCost(b)
             : via ||
               4 * (rank(a) - rank(b)) + crossingCost(a) - crossingCost(b)) ||
@@ -1062,16 +1062,34 @@ export class BusLanesPipelineSolver extends BaseSolver {
       )
       // Preserve the established non-pad search first. Newly supported native
       // carriers participate only after that strategy has actually failed.
-      const available = supported.filter(
+      const preferredBusLayers = (this.routingInput.buses ?? [])
+        .filter((bus) => bus.connectionNames.includes(connection.name))
+        .flatMap((bus) => [bus.preferredLayer, ...(bus.preferredLayers ?? [])])
+        .filter((layer): layer is string => !!layer)
+      const hasSupportedPreferredLayer = supported.some((layer) =>
+        preferredBusLayers.includes(layer),
+      )
+      const candidateLayers = supported.filter(
         (layer) =>
           this.carrierStrategy.name === "native_fallback" ||
           vias.every(
             (via) =>
               layer !== via.from_layer ||
-              this.routingInput.allowedLayers?.includes(layer),
+              (this.routingInput.allowedLayers?.includes(layer) &&
+                (!hasSupportedPreferredLayer ||
+                  preferredBusLayers.includes(layer))),
           ),
       )
-      if (available.length < supported.length)
+      const targetLayer = targets.get(connection.name)
+      const available =
+        this.carrierStrategy.name === "preferred" &&
+        this.attempt === 0 &&
+        targetLayer &&
+        preferredBusLayers.includes(targetLayer) &&
+        candidateLayers.includes(targetLayer)
+          ? [targetLayer]
+          : candidateLayers
+      if (candidateLayers.length < supported.length)
         this.hasNativeCarrierAlternatives = true
       if (available.length > 1) terminalLayers.set(connection.name, available)
     }
